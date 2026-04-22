@@ -13,6 +13,12 @@ CSRF_TRUSTED_ORIGINS = [
     for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',')
     if origin.strip()
 ]
+
+# 在 Vercel 部署时，自动信任当前分配域名，避免登录/CSRF 失败
+vercel_url = os.environ.get('VERCEL_URL', '').strip()
+if vercel_url:
+    ALLOWED_HOSTS.append(vercel_url)
+    CSRF_TRUSTED_ORIGINS.append(f'https://{vercel_url}')
 # 静态文件URL
 STATIC_URL = '/static/'
 
@@ -108,8 +114,12 @@ STATIC_URL = '/static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 if not DEBUG:
+    # Vercel/Railway 这类反向代理场景需要显式识别 https
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SAMESITE = 'Lax'
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
