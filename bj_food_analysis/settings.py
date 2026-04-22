@@ -19,6 +19,10 @@ vercel_url = os.environ.get('VERCEL_URL', '').strip()
 if vercel_url:
     ALLOWED_HOSTS.append(vercel_url)
     CSRF_TRUSTED_ORIGINS.append(f'https://{vercel_url}')
+
+# 生产域名通常为 *.vercel.app，未显式配置时提供安全默认值
+if not ALLOWED_HOSTS:
+    ALLOWED_HOSTS = ['.vercel.app', 'localhost', '127.0.0.1']
 # 静态文件URL
 STATIC_URL = '/static/'
 
