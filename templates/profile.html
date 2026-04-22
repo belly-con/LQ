@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}个人信息{% endblock %}
+{% block content %}
+    <h2>个人账号信息详情</h2>
+    <div style="font-size:16px;line-height:3;color:#333;padding:25px;background:#f9f9f9;border-radius:8px;margin-top:10px;">
+        <p>🔑 用户名：<b>{{ user.username }}</b> <span style="color:#999;font-size:12px;">(账号唯一标识，不可修改)</span></p>
+        <p>📧 电子邮箱：{{ user.email|default:"未填写电子邮箱" }}</p>
+        <p>🟢 账号状态：<span style="color:green;">已激活 · 正常使用</span></p>
+        <p>⚙️ 账号权限：{% if user.is_superuser %}超级管理员账号{% else %}普通用户账号{% endif %}</p>
+        <p>📅 注册时间：{{ user.date_joined|date:"Y-m-d H:i:s" }}</p>
+        <p>📌 最后登录：{{ user.last_login|date:"Y-m-d H:i:s" }}</p>
+    </div>
+{% endblock %}

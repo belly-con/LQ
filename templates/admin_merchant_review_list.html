@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}商家资质审核{% endblock %}
+{% block content %}
+<style>
+.tab-bar{display:flex;gap:8px;margin-bottom:24px;background:white;padding:6px;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.07);width:fit-content}
+.tab-btn{padding:8px 20px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;color:#6b7280}
+.tab-btn.active{background:linear-gradient(135deg,#456bc4,#8e5de0);color:white}
+.cnt-badge{display:inline-block;background:#f3f4f6;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:6px}
+.tab-btn.active .cnt-badge{background:rgba(255,255,255,.25);color:white}
+.card{background:white;border-radius:14px;padding:20px 22px;box-shadow:0 2px 12px rgba(0,0,0,.07);border:1px solid #f3f4f6;margin-bottom:14px;display:flex;justify-content:space-between;gap:20px}
+.meta{font-size:13px;color:#6b7280;display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
+.status{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700}
+.status.pending{background:#fffbeb;color:#92400e}
+.status.approved{background:#ecfdf5;color:#065f46}
+.status.rejected{background:#fef2f2;color:#991b1b}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:18px;text-decoration:none;font-size:13px;font-weight:700;background:linear-gradient(135deg,#456bc4,#8e5de0);color:white}
+</style>
+
+<div class="page-header">
+  <div class="page-title"><i class="fas fa-id-card"></i> 商家资质审核</div>
+  <p class="page-subtitle">审核商家主体真实性与经营资质，审核通过后商家才能提交店铺上架申请。</p>
+</div>
+
+<div class="tab-bar">
+  <a href="?status=pending" class="tab-btn {% if status_filter == 'pending' %}active{% endif %}">待审核 <span class="cnt-badge">{{ counts.pending }}</span></a>
+  <a href="?status=approved" class="tab-btn {% if status_filter == 'approved' %}active{% endif %}">已通过 <span class="cnt-badge">{{ counts.approved }}</span></a>
+  <a href="?status=rejected" class="tab-btn {% if status_filter == 'rejected' %}active{% endif %}">已驳回 <span class="cnt-badge">{{ counts.rejected }}</span></a>
+</div>
+
+{% for merchant in merchants %}
+<div class="card">
+  <div>
+    <div style="font-size:16px;font-weight:700;color:#111;">{{ merchant.business_name }}</div>
+    <div class="meta">
+      <span>账号：{{ merchant.user.username }}</span>
+      <span>法人：{{ merchant.legal_person_name|default:'-' }}</span>
+      <span>电话：{{ merchant.contact_phone }}</span>
+      <span>执照号：{{ merchant.business_license_no|default:'-' }}</span>
+      <span>店铺：{{ merchant.shop_name|default:'-' }}</span>
+      <span>申请时间：{{ merchant.created_at|date:"Y-m-d H:i" }}</span>
+    </div>
+  </div>
+  <div style="text-align:right;">
+    <div class="status {{ merchant.qualification_status }}">
+      {% if merchant.qualification_status == 'pending' %}待审核{% elif merchant.qualification_status == 'approved' %}已通过{% else %}已驳回{% endif %}
+    </div>
+    <div style="margin-top:10px;">
+      <a href="/user/admin_merchant_review/{{ merchant.id }}/" class="btn"><i class="fas fa-eye"></i> 查看并审核</a>
+    </div>
+  </div>
+</div>
+{% empty %}
+<div style="padding:40px;background:white;border-radius:14px;color:#9ca3af;text-align:center;">暂无资质申请</div>
+{% endfor %}
+{% endblock %}
+

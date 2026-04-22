@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    /* 与food_list.html 1:1相同的样式，保证框架统一 */
+    .search-container { margin: 15px 0; }
+    .table-scroll { overflow-x: auto; margin: 10px 0; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px 12px; border: 1px solid #ddd; text-align: left; }
+    th { background-color: #f5f5f5; }
+    .pagination { margin: 15px 0; }
+    .pagination a, .pagination span {
+        display: inline-block;
+        padding: 5px 10px;
+        margin: 0 2px;
+	border: 1px solid #ddd;
+	text-decoration: none;
+    }
+    .pagination .active { background-color: #0d6efd; color: white; border-color: #0d6efd; }
+    .page-jump { margin-top: 10px; }
+    /* 收藏按钮样式和列表页一致 你的原版样式完全保留 */
+    .collect-btn {
+        padding: 3px 8px;
+        text-decoration: none;
+        border-radius: 4px;
+        color: white;
+        font-size: 12px;
+	background-color: #dc3545;
+	border:1px solid #dc3545;
+    }
+    .collect-btn-add {background-color: #6c757d; border:1px solid #6c757d;}
+    .empty-tip{text-align:center;padding:30px 0;color:#666;font-size:16px;}
+    /* ✅✅✅ 新增：用户端提示消息样式，和food_list.html完全一致，弹窗右上角+自动消失 */
+    .msg-notice {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        padding: 10px 20px;
+        background: #28a745;
+        color: #fff;
+        border-radius: 5px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        animation: fade-out 3s ease forwards;
+    }
+    @keyframes fade-out {
+        0% { opacity: 1; transform: translateY(0); }
+        80% { opacity: 1; transform: translateY(0); }
+        100% { opacity: 0; transform: translateY(-10px); }
+    }
+</style>
+
+<!-- ✅✅✅ 核心新增：取消收藏的提示消息渲染代码  解决提示不显示问题 -->
+{% if messages %}
+    {% for message in messages %}
+        <div class="msg-notice">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+
+<div class="content-wrapper">
+    <h3>❤️ 我的收藏店铺</h3>
+    <p class="text-muted">
+        统计：共收藏 {{ collect_count }} 家商铺 | 收藏排序：按收藏时间倒序展示
+    </p>
+
+    <!-- 收藏店铺列表区域 - 和列表页相同表格布局 -->
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>序号</th>
+                    <th>店铺ID</th>
+                    <th>店铺名称</th>
+                    <th>餐饮品类</th>
+                    <th>综合评分</th>
+                    <th>评论数量</th>
+                    <th>人均消费(元)</th>
+                    <th>区县</th>
+                    <th>商圈</th>
+                    <th>营业时间</th>
+                    <th>收藏时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for collect in collect_list %}
+                    {% with shop=collect.shop %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ shop.shop_id }}</td>
+                        <td>{{ shop.shop_name }}</td>
+                        <td>{{ shop.food_type|default:"-" }}</td>
+                        <td>{{ shop.shop_score|default:"-" }}</td>
+                        <td>{{ shop.comment_count|default:0 }}</td>
+                        <td>{{ shop.avg_price|default:"暂无" }}</td>
+                        <td>{{ shop.county|default:"-" }}</td>
+                        <td>{{ shop.business_circle|default:"-" }}</td>
+                        <td>{{ shop.business_hours|default:"-" }}</td>
+                        <td>{{ collect.collect_time|date:"Y-m-d H:i:s" }}</td>
+                        <td style="white-space: nowrap; padding: 0; margin:0;">
+    <a href="{% url 'cancel_collect' shop.shop_id %}" class="collect-btn collect-btn-add">🤍 取消收藏</a>
+</td>
+                    </tr>
+                    {% endwith %}
+                {% empty %}
+                    <tr>
+                        <td colspan="12" class="empty-tip">暂无收藏的店铺，快去发现美食收藏吧！</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

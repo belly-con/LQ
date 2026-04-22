@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block title %}申请商家入驻{% endblock %}
+{% block content %}
+<style>
+.merchant-card{background:white;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);overflow:hidden;max-width:860px;margin:0 auto}
+.merchant-card-header{background:linear-gradient(135deg,#f59e0b,#ef4444);padding:32px;color:white;text-align:center}
+.merchant-card-header h2{font-size:22px;font-weight:800;margin:0 0 8px}
+.merchant-card-header p{font-size:14px;opacity:.85;margin:0}
+.merchant-form{padding:32px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 20px}
+.form-group{margin-bottom:4px}
+.form-group.full{grid-column:1/-1}
+.form-label{display:block;font-size:13px;font-weight:700;color:#374151;margin-bottom:8px}
+.form-label span{color:#ef4444}
+.form-control{width:100%;padding:12px 16px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:inherit;outline:none;transition:all .2s;box-sizing:border-box;background:#f9fafb}
+.form-control:focus{border-color:#f59e0b;background:white;box-shadow:0 0 0 3px rgba(245,158,11,.1)}
+.form-hint{font-size:12px;color:#9ca3af;margin-top:5px}
+.btn-submit{width:100%;padding:14px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:white;border:none;border-radius:24px;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:8px}
+.btn-submit:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(245,158,11,.35)}
+.benefit-list{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:20px;margin-bottom:28px}
+.benefit-list h4{font-size:14px;font-weight:700;color:#92400e;margin:0 0 12px}
+.benefit-item{display:flex;align-items:center;gap:10px;font-size:13px;color:#78350f;margin-bottom:8px}
+.benefit-item:last-child{margin-bottom:0}
+.alert-msg{padding:12px 16px;border-radius:10px;margin-bottom:20px;font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px}
+.alert-msg.error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+</style>
+
+<div class="page-header">
+    <div class="page-title"><i class="fas fa-store-alt"></i> 申请商家入驻</div>
+    <p class="page-subtitle">填写商家信息，完成入驻后即可提交店铺上架申请，经管理员审核通过后展示给所有用户。</p>
+</div>
+
+<div class="merchant-card">
+    <div class="merchant-card-header">
+        <div style="font-size:48px;margin-bottom:12px">🏪</div>
+        <h2>成为认证商家</h2>
+        <p>开启你的线上美食之旅</p>
+    </div>
+    <div class="merchant-form">
+        {% if msg %}
+        <div class="alert-msg {{ msg_type }}"><i class="fas fa-exclamation-circle"></i>{{ msg }}</div>
+        {% endif %}
+
+        <div class="benefit-list">
+            <h4>🎯 入驻后你可以：</h4>
+            <div class="benefit-item"><i class="fas fa-check-circle" style="color:#10b981"></i> 提交店铺上架申请，展示给数万北京餐饮用户</div>
+            <div class="benefit-item"><i class="fas fa-check-circle" style="color:#10b981"></i> 实时查看审核进度，驳回后可修改重新提交</div>
+            <div class="benefit-item"><i class="fas fa-check-circle" style="color:#10b981"></i> 审核通过后店铺立即进入推荐系统</div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">商家名称 / 公司名称 <span>*</span></label>
+                    <input type="text" name="business_name" class="form-control" placeholder="如：北京某某餐饮有限公司" required value="{{ profile.business_name|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">联系电话 <span>*</span></label>
+                    <input type="text" name="contact_phone" class="form-control" placeholder="用于审核联系" required value="{{ profile.contact_phone|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">法人姓名 <span>*</span></label>
+                    <input type="text" name="legal_person_name" class="form-control" placeholder="营业执照法人姓名" required value="{{ profile.legal_person_name|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">法人身份证号 <span>*</span></label>
+                    <input type="text" name="id_card_no" class="form-control" placeholder="用于实名认证审核" required value="{{ profile.id_card_no|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">营业执照号 <span>*</span></label>
+                    <input type="text" name="business_license_no" class="form-control" placeholder="统一社会信用代码" required value="{{ profile.business_license_no|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">商家主体地址 <span>*</span></label>
+                    <input type="text" name="business_address" class="form-control" placeholder="营业执照注册地址" required value="{{ profile.business_address|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">店铺名称 <span>*</span></label>
+                    <input type="text" name="shop_name" class="form-control" placeholder="门店展示名称" required value="{{ profile.shop_name|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">店铺地址 <span>*</span></label>
+                    <input type="text" name="shop_address" class="form-control" placeholder="实际经营门店地址" required value="{{ profile.shop_address|default:'' }}">
+                </div>
+                <div class="form-group full">
+                    <label class="form-label">经营范围 <span>*</span></label>
+                    <input type="text" name="business_scope" class="form-control" placeholder="如：热食类食品制售、饮品制售" required value="{{ profile.business_scope|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">营业执照图片 <span>*</span></label>
+                    <input type="file" name="license_image" class="form-control" accept="image/*" {% if not profile or not profile.license_image %}required{% endif %}>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">法人身份证正面图片 <span>*</span></label>
+                    <input type="file" name="id_card_front_image" class="form-control" accept="image/*" {% if not profile or not profile.id_card_front_image %}required{% endif %}>
+                </div>
+                <div class="form-group full">
+                    <label class="form-label">店铺门头/环境图片 <span>*</span></label>
+                    <input type="file" name="shop_image" class="form-control" accept="image/*" {% if not profile or not profile.shop_image %}required{% endif %}>
+                    <div class="form-hint">建议上传清晰门头图，便于管理员核验实际经营场景</div>
+                </div>
+            </div>
+            <button type="submit" class="btn-submit"><i class="fas fa-paper-plane"></i> 提交入驻申请</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

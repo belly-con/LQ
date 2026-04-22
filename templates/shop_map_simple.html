@@ -1,0 +1,28 @@
+<!-- templates/shop_map_simple.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>简单地图</title>
+    <script src="https://api.map.baidu.com/api?v=3.0&ak={{ baidu_map_ak }}"></script>
+</head>
+<body>
+    <div id="map" style="width:100%;height:600px;"></div>
+    <script>
+        var shops = {{ shops_json|safe }};
+
+        window.onload = function() {
+            var map = new BMap.Map("map");
+            map.centerAndZoom(new BMap.Point(116.404, 39.915), 12);
+            map.enableScrollWheelZoom(true);
+
+            shops.forEach(function(shop) {
+                var point = new BMap.Point(shop.lng, shop.lat);
+                var marker = new BMap.Marker(point);
+                map.addOverlay(marker);
+            });
+
+            alert('地图加载成功！显示 ' + shops.length + ' 家店铺');
+        };
+    </script>
+</body>
+</html>

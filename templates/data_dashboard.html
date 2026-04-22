@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>北京餐饮实时数据大屏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'Arial', sans-serif;
+            background: #0a1133;
+            color: #fff;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            padding: 10px;
+        }
+
+        /* 大屏容器 */
+        .datav-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(135deg, #0c1b33 0%, #0a1133 100%);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 顶部标题栏 */
+        .header {
+            height: 80px;
+            background: linear-gradient(90deg, rgba(0, 40, 100, 0.8), rgba(0, 20, 60, 0.9));
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            border-bottom: 2px solid rgba(0, 150, 255, 0.5);
+        }
+
+        .title {
+            display: flex;
+            align-items: center;
+        }
+
+        .title h1 {
+            font-size: 32px;
+            background: linear-gradient(90deg, #00f2fe, #4facfe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-right: 20px;
+        }
+
+        .title .subtitle {
+            font-size: 16px;
+            color: #8ba1c7;
+        }
+
+        .time-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .time-box {
+            background: rgba(0, 40, 100, 0.5);
+            padding: 8px 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 150, 255, 0.3);
+        }
+
+        /* KPI指标区域 */
+        .kpi-row {
+            height: 120px;
+            display: flex;
+            padding: 15px 20px;
+            gap: 15px;
+        }
+
+        .kpi-card {
+            flex: 1;
+            background: rgba(16, 35, 70, 0.7);
+            border-radius: 10px;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            border: 1px solid rgba(0, 150, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 150, 255, 0.1), transparent);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            100% { left: 100%; }
+        }
+
+        .kpi-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-right: 15px;
+        }
+
+        .kpi-content {
+            flex: 1;
+        }
+
+        .kpi-value {
+            font-size: 32px;
+            font-weight: bold;
+            line-height: 1;
+            margin-bottom: 5px;
+            background: linear-gradient(90deg, #fff, #4facfe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .kpi-label {
+            font-size: 14px;
+            color: #8ba1c7;
+        }
+
+        .kpi-trend {
+            font-size: 12px;
+            color: #52c41a;
+            margin-top: 3px;
+        }
+
+        /* 主体内容区域 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            padding: 0 20px 20px;
+            gap: 15px;
+            min-height: 0;
+        }
+
+        /* 左侧区域 */
+        .left-panel {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* 中间区域 */
+        .center-panel {
+            flex: 4;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* 右侧区域 */
+        .right-panel {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* 通用面板样式 */
+        .panel {
+            background: rgba(16, 35, 70, 0.7);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 150, 255, 0.2);
+            padding: 15px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .panel::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00f2fe, #4facfe);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #4facfe;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-subtitle {
+            font-size: 12px;
+            color: #8ba1c7;
+        }
+
+
+        /* 排行榜样式 */
+        .rank-list {
+            height: 100%;
+            min-height: 300px;  /* 设置最小高度，确保至少显示几条 */
+            max-height: 500px;  /* 设置最大高度，超出后可滚动 */
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 5px;
+        }
+
+        /* 滚动条样式 */
+        .rank-list::-webkit-scrollbar,
+        .alert-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .rank-list::-webkit-scrollbar-track,
+        .alert-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .rank-list::-webkit-scrollbar-thumb,
+        .alert-list::-webkit-scrollbar-thumb {
+            background: rgba(79, 172, 254, 0.5);
+            border-radius: 3px;
+        }
+
+        .rank-list::-webkit-scrollbar-thumb:hover,
+        .alert-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(79, 172, 254, 0.7);
+        }
+
+        .rank-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            border-left: 3px solid #4facfe;
+            min-height: 70px;  /* 确保每个排名项有足够高度 */
+            transition: all 0.3s ease;
+        }
+
+        .rank-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(3px);
+        }
+
+        .rank-number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(0, 150, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 12px;
+            color: #4facfe;
+        }
+
+        .rank-info {
+            flex: 1;
+        }
+
+        .rank-name {
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .rank-stats {
+            font-size: 12px;
+            color: #8ba1c7;
+            display: flex;
+            gap: 10px;
+        }
+
+        /* 图表容器 */
+        .chart-container {
+            width: 100%;
+            height: 200px;
+            flex-shrink: 0;
+        }
+
+        /* 预警列表 */
+        .alert-list {
+            height: 100%;
+            min-height: 200px;  /* 设置最小高度，确保至少显示一两条 */
+            max-height: 400px;  /* 设置最大高度，超出后可滚动 */
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 5px;
+        }
+
+        .alert-item {
+            padding: 12px;
+            margin-bottom: 10px;
+            background: rgba(245, 34, 45, 0.15);
+            border-radius: 6px;
+            border-left: 3px solid #f5222d;
+            animation: pulse 2s infinite;
+            min-height: 60px;  /* 确保每个预警项有足够高度 */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* 数据表格 */
+        .data-table {
+            width: 100%;
+            font-size: 12px;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 8px;
+            color: #8ba1c7;
+            font-weight: normal;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .data-table td {
+            padding: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* 底部状态栏 */
+        .footer {
+            height: 40px;
+            background: rgba(0, 20, 40, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            font-size: 12px;
+            color: #8ba1c7;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #52c41a;
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 1600px) {
+            .kpi-value { font-size: 28px; }
+            .panel-title { font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="datav-container">
+        <!-- 顶部标题栏 -->
+        <div class="header">
+            <div class="title">
+                <h1>北京餐饮数据智慧大屏</h1>
+                <div class="subtitle">实时监控 · 智能分析 · 决策支持</div>
+            </div>
+            <div class="time-info">
+                <div class="time-box" id="currentDate">{{ current_time }}</div>
+                <div class="time-box" id="updateTime">最后更新: <span id="lastUpdate">刚刚</span></div>
+            </div>
+        </div>
+
+        <!-- KPI指标区域 -->
+        <div class="kpi-row">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background: rgba(102, 126, 234, 0.2); color: #667eea;">
+                    <i class="fas fa-store"></i>
+                </div>
+                <div class="kpi-content">
+                    <div class="kpi-value" id="totalShops">{{ total_shops }}</div>
+                    <div class="kpi-label">总店铺数量</div>
+                    <div class="kpi-trend">覆盖全市主要商圈</div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background: rgba(245, 34, 45, 0.2); color: #f5222d;">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <div class="kpi-content">
+                    <div class="kpi-value" id="totalComments">{{ total_comments }}</div>
+                    <div class="kpi-label">总评论数量</div>
+                    <div class="kpi-trend" id="todayComments">今日新增: {{ today_comments }}</div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background: rgba(82, 196, 26, 0.2); color: #52c41a;">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="kpi-content">
+                    <div class="kpi-value" id="avgScore">{{ avg_score }}</div>
+                    <div class="kpi-label">平均评分</div>
+                    <div class="kpi-trend" id="scoreTrend">较昨日 +0.1</div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background: rgba(250, 173, 20, 0.2); color: #faad14;">
+                    <i class="fas fa-yen-sign"></i>
+                </div>
+                <div class="kpi-content">
+                    <div class="kpi-value" id="avgPrice">¥{{ avg_price }}</div>
+                    <div class="kpi-label">人均消费</div>
+                    <div class="kpi-trend">中等消费水平</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主体内容区域 -->
+        <div class="main-content">
+            <!-- 左侧区域 -->
+            <div class="left-panel">
+                <!-- 实时热榜 -->
+                <div class="panel" style="flex: 1.5; min-height: 350px; max-height: 550px;">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <i class="fas fa-fire"></i> 实时热榜
+                        </div>
+                        <div class="panel-subtitle">TOP10人气店铺</div>
+                    </div>
+                    <div class="rank-list" id="top10List">
+                        <!-- 动态加载 -->
+                    </div>
+                </div>
+
+                <!-- 菜系热度 -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <i class="fas fa-utensils"></i> 菜系热度
+                        </div>
+                        <div class="panel-subtitle">今日关注度排行</div>
+                    </div>
+                    <div class="chart-container" id="foodTypeChart"></div>
+                </div>
+            </div>
+
+            <!-- 中间区域 -->
+            <div class="center-panel">
+                <!-- 评分分布统计 -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <i class="fas fa-chart-pie"></i> 评分分布统计
+                        </div>
+                        <div class="panel-subtitle">店铺评分区间分布</div>
+                    </div>
+                    <div class="chart-container" id="scoreDistributionChart"></div>
+                </div>
+
+                <!-- 评论情感趋势 -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <i class="fas fa-chart-line"></i> 评论情感趋势
+                        </div>
+                        <div class="panel-subtitle">近5年情感分析趋势</div>
+                    </div>
+                    <div class="chart-container" id="sentimentTrendChart"></div>
+                </div>
+            </div>
+
+            <!-- 右侧区域 -->
+            <div class="right-panel">
+                <!-- 实时预警 -->
+                <div class="panel" style="flex: 1.5; min-height: 250px; max-height: 400px;">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <i class="fas fa-exclamation-triangle"></i> 实时预警
+                        </div>
+                        <div class="panel-subtitle">低评分店铺监控</div>
+                    </div>
+                    <div class="alert-list" id="alertList">
+                        <!-- 动态加载 -->
+                    </div>
+                </div>
+
+                <!-- 区县分布 -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <i class="fas fa-map-marker-alt"></i> 区县分布
+                        </div>
+                        <div class="panel-subtitle">店铺数量TOP10</div>
+                    </div>
+                    <div class="chart-container" id="countyChart"></div>
+                </div>
+
+                <!-- 情感分析 -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <i class="fas fa-smile"></i> 今日情感分析
+                        </div>
+                        <div class="panel-subtitle">评论情感分布</div>
+                    </div>
+                    <div class="chart-container" id="sentimentChart"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部状态栏 -->
+        <div class="footer">
+            <div class="status-item">
+                <div class="status-dot"></div>
+                <span>系统运行正常</span>
+            </div>
+            <div>北京餐饮数据分析系统 | 数据实时更新</div>
+            <div>
+                <a href="/user/index/" style="color: #4facfe; text-decoration: none; margin-right: 15px;">
+                    <i class="fas fa-home"></i> 返回首页
+                </a>
+                <a href="/user_system/food_list/" style="color: #4facfe; text-decoration: none;">
+                    <i class="fas fa-list"></i> 详细数据
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入ECharts和FontAwesome -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.2/echarts.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <script>
+        // 初始化数据
+        const data = {
+            top10Shops: {{ top10_shops_json|safe }},
+            foodTypeData: {{ food_type_realtime_json|safe }},
+            countyData: {{ county_realtime_json|safe }},
+            scoreTrend: {{ score_trend_json|safe }},
+            alerts: {{ low_score_alerts_json|safe }},
+            sentiment: {{ sentiment_realtime_json|safe }},
+            priceData: {{ price_distribution_json|safe }},
+            // 新增：评分分布数据
+            scoreDistribution: {
+                high: {{ score_distribution.high }},
+                mid_high: {{ score_distribution.mid_high }},
+                mid: {{ score_distribution.mid }},
+                low: {{ score_distribution.low }}
+            },
+            // 新增：情感趋势数据
+            sentimentTrend: {{ sentiment_trend_json|safe }}
+        };
+
+        // 1. 初始化排行榜
+        function initRankList() {
+            const container = document.getElementById('top10List');
+            container.innerHTML = '';
+
+            data.top10Shops.forEach((shop, index) => {
+                const rankItem = document.createElement('div');
+                rankItem.className = 'rank-item';
+                rankItem.innerHTML = `
+                    <div class="rank-number" style="background: ${
+                        index < 3 ? 'rgba(255, 215, 0, 0.2)' : 'rgba(0, 150, 255, 0.2)'
+                    }; color: ${
+                        index < 3 ? '#ffd700' : '#4facfe'
+                    };">${index + 1}</div>
+                    <div class="rank-info">
+                        <div class="rank-name">${shop.shop_name}</div>
+                        <div class="rank-stats">
+                            <span>评分: ${shop.shop_score}</span>
+                            <span>评论: ${shop.comment_count}</span>
+                            <span>今日: ${shop.today_comments_count || 0}</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(rankItem);
+            });
+        }
+
+        // 2. 初始化预警列表
+        function initAlertList() {
+            const container = document.getElementById('alertList');
+            container.innerHTML = '';
+
+            // 检查数据是否存在且不为空
+            if (!data.alerts || data.alerts.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 30px; color: #8ba1c7; line-height: 1.6;">暂无预警信息<br/><span style="font-size: 11px; opacity: 0.7;">(评分低于3.5的店铺)</span></div>';
+                return;
+            }
+
+            console.log('预警数据:', data.alerts);  // 调试用
+
+            data.alerts.forEach((alert, index) => {
+                const alertItem = document.createElement('div');
+                alertItem.className = 'alert-item';
+                alertItem.innerHTML = `
+                    <div style="font-weight: bold; margin-bottom: 8px; color: #fff; font-size: 14px;">
+                        ${index + 1}. ${alert.shop_name || '未知店铺'}
+                    </div>
+                    <div style="font-size: 12px; color: #8ba1c7; line-height: 1.5;">
+                        <span>评分: <span style="color: #f5222d; font-weight: bold; font-size: 13px;">${alert.shop_score ? alert.shop_score.toFixed(1) : 'N/A'}</span></span>
+                        <span style="margin-left: 12px;">区域: <span style="color: #4facfe;">${alert.county || '未知'}</span></span>
+                    </div>
+                `;
+                container.appendChild(alertItem);
+            });
+        }
+
+        // 3. 初始化菜系热度图表
+        function initFoodTypeChart() {
+            const chart = echarts.init(document.getElementById('foodTypeChart'));
+            const chartData = data.foodTypeData.map(item => ({
+                name: item.food_type,
+                value: item.count || 0  // 使用店铺数量而不是今日评论数
+            }));
+
+            const option = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{b}: {c}家店铺'
+                },
+                series: [{
+                    name: '店铺数量',
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    center: ['50%', '50%'],
+                    itemStyle: {
+                        borderRadius: 8,
+                        borderColor: '#0a1133',
+                        borderWidth: 2
+                    },
+                    label: {
+                        show: true,
+                        formatter: '{b}\n{c}家'
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: '14',
+                            fontWeight: 'bold'
+                        }
+                    },
+                    data: chartData
+                }]
+            };
+
+            chart.setOption(option);
+        }
+
+        // 4. 初始化评分分布统计图表
+        function initScoreDistributionChart() {
+            const chart = echarts.init(document.getElementById('scoreDistributionChart'));
+            
+            const scoreData = data.scoreDistribution;
+            const total = scoreData.high + scoreData.mid_high + scoreData.mid + scoreData.low;
+
+            const option = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{b}: {c}家 ({d}%)'
+                },
+                legend: {
+                    orient: 'vertical',
+                    right: 10,
+                    top: 'center',
+                    textStyle: {
+                        color: '#8ba1c7',
+                        fontSize: 12
+                    },
+                    data: ['高分(≥4.5)', '中高分(4.0-4.5)', '中等(3.0-4.0)', '低分(<3.0)']
+                },
+                series: [{
+                    name: '评分分布',
+                    type: 'pie',
+                    radius: ['45%', '75%'],
+                    center: ['40%', '50%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: {
+                        borderRadius: 8,
+                        borderColor: '#0a1133',
+                        borderWidth: 2
+                    },
+                    label: {
+                        show: true,
+                        formatter: '{b}\n{c}家',
+                        fontSize: 11,
+                        color: '#fff'
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: '14',
+                            fontWeight: 'bold'
+                        }
+                    },
+                    data: [
+                        { 
+                            value: scoreData.high, 
+                            name: '高分(≥4.5)', 
+                            itemStyle: { color: '#52c41a' } 
+                        },
+                        { 
+                            value: scoreData.mid_high, 
+                            name: '中高分(4.0-4.5)', 
+                            itemStyle: { color: '#1890ff' } 
+                        },
+                        { 
+                            value: scoreData.mid, 
+                            name: '中等(3.0-4.0)', 
+                            itemStyle: { color: '#faad14' } 
+                        },
+                        { 
+                            value: scoreData.low, 
+                            name: '低分(<3.0)', 
+                            itemStyle: { color: '#f5222d' } 
+                        }
+                    ]
+                }]
+            };
+
+            chart.setOption(option);
+        }
+
+        // 5. 初始化评论情感趋势图表
+        function initSentimentTrendChart() {
+            const chart = echarts.init(document.getElementById('sentimentTrendChart'));
+
+            if (!data.sentimentTrend || data.sentimentTrend.length === 0) {
+                document.getElementById('sentimentTrendChart').innerHTML = 
+                    '<div style="text-align: center; padding: 50px; color: #8ba1c7;">暂无情感分析数据<br/>请先在管理员后台运行情感分析任务</div>';
+                return;
+            }
+
+            const years = data.sentimentTrend.map(item => item.year);
+            const positiveData = data.sentimentTrend.map(item => item.positive);
+            const negativeData = data.sentimentTrend.map(item => item.negative);
+            const neutralData = data.sentimentTrend.map(item => item.neutral);
+
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'cross'
+                    },
+                    formatter: function(params) {
+                        let result = params[0].name + '<br/>';
+                        params.forEach(param => {
+                            result += param.seriesName + ': ' + param.value + '条<br/>';
+                        });
+                        return result;
+                    }
+                },
+                legend: {
+                    data: ['正面', '负面', '中性'],
+                    top: 10,
+                    textStyle: {
+                        color: '#8ba1c7',
+                        fontSize: 12
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '10%',
+                    top: '20%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: years,
+                    axisLine: {
+                        lineStyle: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        }
+                    },
+                    axisLabel: {
+                        color: '#8ba1c7'
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    axisLine: {
+                        lineStyle: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        }
+                    },
+                    axisLabel: {
+                        color: '#8ba1c7'
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    }
+                },
+                series: [
+                    {
+                        name: '正面',
+                        type: 'line',
+                        smooth: true,
+                        data: positiveData,
+                        lineStyle: {
+                            color: '#52c41a',
+                            width: 3
+                        },
+                        itemStyle: {
+                            color: '#52c41a'
+                        },
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(82, 196, 26, 0.3)' },
+                                { offset: 1, color: 'rgba(82, 196, 26, 0.1)' }
+                            ])
+                        }
+                    },
+                    {
+                        name: '负面',
+                        type: 'line',
+                        smooth: true,
+                        data: negativeData,
+                        lineStyle: {
+                            color: '#f5222d',
+                            width: 3
+                        },
+                        itemStyle: {
+                            color: '#f5222d'
+                        },
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(245, 34, 45, 0.3)' },
+                                { offset: 1, color: 'rgba(245, 34, 45, 0.1)' }
+                            ])
+                        }
+                    },
+                    {
+                        name: '中性',
+                        type: 'line',
+                        smooth: true,
+                        data: neutralData,
+                        lineStyle: {
+                            color: '#faad14',
+                            width: 3
+                        },
+                        itemStyle: {
+                            color: '#faad14'
+                        },
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(250, 173, 20, 0.3)' },
+                                { offset: 1, color: 'rgba(250, 173, 20, 0.1)' }
+                            ])
+                        }
+                    }
+                ]
+            };
+
+            chart.setOption(option);
+        }
+
+        // 6. 初始化区县分布图表
+        function initCountyChart() {
+            const chart = echarts.init(document.getElementById('countyChart'));
+
+            if (!data.countyData || data.countyData.length === 0) {
+                document.getElementById('countyChart').innerHTML = 
+                    '<div style="text-align: center; padding: 50px; color: #8ba1c7;">暂无区县数据</div>';
+                return;
+            }
+
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    },
+                    formatter: function(params) {
+                        const item = params[0];
+                        return `${item.name}<br/>店铺数量: ${item.value}家`;
+                    }
+                },
+                grid: {
+                    left: '15%',  // 增加左边距以显示区县名称
+                    right: '4%',
+                    bottom: '10%',
+                    top: '10%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'value',
+                    name: '店铺数量',
+                    nameTextStyle: {
+                        color: '#8ba1c7',
+                        fontSize: 12
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        }
+                    },
+                    axisLabel: {
+                        color: '#8ba1c7',
+                        formatter: '{value}家'
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    }
+                },
+                yAxis: {
+                    type: 'category',
+                    data: data.countyData.map(item => item.county),
+                    axisLine: {
+                        lineStyle: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        }
+                    },
+                    axisLabel: {
+                        color: '#fff',
+                        fontSize: 12,
+                        interval: 0  // 强制显示所有标签
+                    }
+                },
+                series: [{
+                    name: '店铺数量',
+                    type: 'bar',
+                    data: data.countyData.map(item => item.total),
+                    itemStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                            { offset: 0, color: '#83bff6' },
+                            { offset: 0.5, color: '#188df0' },
+                            { offset: 1, color: '#188df0' }
+                        ])
+                    },
+                    barWidth: '60%',
+                    label: {
+                        show: true,
+                        position: 'right',
+                        formatter: '{c}家',
+                        color: '#fff',
+                        fontSize: 11
+                    }
+                }]
+            };
+
+            chart.setOption(option);
+        }
+
+        // 7. 初始化情感分析图表（饼图）
+        function initSentimentChart() {
+            const chart = echarts.init(document.getElementById('sentimentChart'));
+
+            const option = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{b}: {c}条 ({d}%)'
+                },
+                legend: {
+                    orient: 'vertical',
+                    right: 10,
+                    top: 'center',
+                    textStyle: {
+                        color: '#8ba1c7'
+                    }
+                },
+                series: [{
+                    name: '情感分布',
+                    type: 'pie',
+                    radius: ['50%', '70%'],
+                    center: ['40%', '50%'],
+                    avoidLabelOverlap: false,
+                    label: {
+                        show: true,
+                        formatter: '{b}\n{c}条'
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: '14',
+                            fontWeight: 'bold'
+                        }
+                    },
+                    data: [
+                        { value: data.sentiment.positive, name: '正面', itemStyle: { color: '#52c41a' } },
+                        { value: data.sentiment.negative, name: '负面', itemStyle: { color: '#f5222d' } },
+                        { value: data.sentiment.neutral, name: '中性', itemStyle: { color: '#faad14' } }
+                    ]
+                }]
+            };
+
+            chart.setOption(option);
+        }
+
+        // 8. 更新时间显示
+        function updateTimeDisplay() {
+            const now = new Date();
+            document.getElementById('currentDate').textContent =
+                now.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            document.getElementById('lastUpdate').textContent = '刚刚';
+        }
+
+        // 9. 模拟数据更新
+        function simulateDataUpdate() {
+            // 模拟今日评论数增加
+            const todayCommentsEl = document.getElementById('todayComments');
+            const current = parseInt(todayCommentsEl.textContent.match(/\d+/)[0]);
+            todayCommentsEl.textContent = `今日新增: ${current + Math.floor(Math.random() * 3)}`;
+
+            // 更新最后更新时间
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // 初始化所有图表和组件
+        function initAll() {
+            initRankList();
+            initAlertList();
+            initFoodTypeChart();
+            initScoreDistributionChart();  // 评分分布统计
+            initSentimentTrendChart();     // 评论情感趋势
+            initCountyChart();
+            initSentimentChart();
+            updateTimeDisplay();
+
+            // 每30秒更新一次时间
+            setInterval(updateTimeDisplay, 30000);
+
+            // 每2分钟模拟数据更新（实际项目中应该从服务器获取）
+            setInterval(simulateDataUpdate, 120000);
+
+            // 窗口大小变化时重置图表
+            window.addEventListener('resize', () => {
+                echarts.getInstanceByDom(document.getElementById('foodTypeChart'))?.resize();
+                echarts.getInstanceByDom(document.getElementById('scoreDistributionChart'))?.resize();
+                echarts.getInstanceByDom(document.getElementById('sentimentTrendChart'))?.resize();
+                echarts.getInstanceByDom(document.getElementById('countyChart'))?.resize();
+                echarts.getInstanceByDom(document.getElementById('sentimentChart'))?.resize();
+            });
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initAll);
+
+        // 全屏功能
+        document.addEventListener('dblclick', () => {
+            const elem = document.documentElement;
+            if (!document.fullscreenElement) {
+                elem.requestFullscreen?.();
+            } else {
+                document.exitFullscreen?.();
+            }
+        });
+    </script>
+</body>
+</html>

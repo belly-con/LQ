@@ -1,0 +1,635 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}商圈分析{% endblock %}
+
+{% block content %}
+<style>
+    /* 页面容器 */
+    .analysis-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    /* 页面标题 */
+    .page-header {
+        margin-bottom: 30px;
+        border-bottom: 2px solid #1abc9c;
+        padding-bottom: 15px;
+    }
+
+    .page-header h1 {
+        color: #2c3e50;
+        font-size: 24px;
+        margin-bottom: 10px;
+        font-weight: normal;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .page-header p {
+        color: #7f8c8d;
+        font-size: 14px;
+    }
+
+    /* 统计卡片 */
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 8px;
+        padding: 25px 20px;
+        text-align: center;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.12);
+    }
+
+    .stat-card:nth-child(1) { border-left: 4px solid #3498db; }
+    .stat-card:nth-child(2) { border-left: 4px solid #2ecc71; }
+    .stat-card:nth-child(3) { border-left: 4px solid #e74c3c; }
+    .stat-card:nth-child(4) { border-left: 4px solid #f39c12; }
+
+    .stat-icon {
+        font-size: 32px;
+        margin-bottom: 15px;
+        display: block;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: bold;
+        color: #2c3e50;
+        margin: 10px 0;
+    }
+
+    .stat-label {
+        color: #7f8c8d;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* 图表容器 */
+    .chart-section {
+        background: white;
+        border-radius: 8px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
+
+    .section-title {
+        color: #2c3e50;
+        font-size: 18px;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #ecf0f1;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .chart-container {
+        width: 100%;
+        height: 400px;
+    }
+
+    /* 表格样式 */
+    .data-table-container {
+        background: white;
+        border-radius: 8px;
+        padding: 25px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        font-size: 14px;
+    }
+
+    .data-table th {
+        background: #f8f9fa;
+        color: #2c3e50;
+        font-weight: 600;
+        text-align: left;
+        padding: 15px;
+        border-bottom: 2px solid #ecf0f1;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .data-table td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #ecf0f1;
+    }
+
+    .data-table tbody tr:hover {
+        background-color: #f8f9fa;
+        cursor: pointer;
+    }
+
+    .circle-name {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .shop-count {
+        color: #3498db;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .avg-score {
+        text-align: center;
+    }
+
+    .avg-price {
+        color: #2ecc71;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    /* 评分星星 */
+    .stars {
+        display: inline-block;
+        font-size: 16px;
+        color: #f39c12;
+    }
+
+    /* 切换按钮 */
+    .tab-buttons {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .tab-btn {
+        padding: 8px 16px;
+        background: #f8f9fa;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .tab-btn.active {
+        background: #1abc9c;
+        color: white;
+        border-color: #1abc9c;
+    }
+
+    /* 排名标签 */
+    .rank-badge {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        line-height: 24px;
+        text-align: center;
+        background: #3498db;
+        color: white;
+        border-radius: 50%;
+        font-size: 12px;
+        font-weight: bold;
+        margin-right: 10px;
+    }
+
+    .rank-badge.gold { background: #f39c12; }
+    .rank-badge.silver { background: #bdc3c7; }
+    .rank-badge.bronze { background: #d35400; }
+
+    /* 响应式调整 */
+    @media (max-width: 768px) {
+        .stats-container {
+            grid-template-columns: 1fr;
+        }
+
+        .chart-container {
+            height: 300px;
+        }
+
+        .data-table {
+            font-size: 12px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 8px 10px;
+        }
+
+        .tab-buttons {
+            flex-wrap: wrap;
+        }
+    }
+</style>
+
+<div class="analysis-container">
+    <!-- 页面标题 -->
+    <div class="page-header">
+        <h1>🏢 商圈分析</h1>
+        <p>分析北京市各商圈的店铺分布、评分和价格情况（Top 20商圈）</p>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="stat-icon">🏢</div>
+            <div class="stat-value" id="totalCircles">{{ circle_data|length }}</div>
+            <div class="stat-label">分析商圈数量</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">🏪</div>
+            <div class="stat-value" id="totalShops">0</div>
+            <div class="stat-label">总店铺数量</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">⭐</div>
+            <div class="stat-value" id="avgScore">0.00</div>
+            <div class="stat-label">平均评分</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-value" id="avgPrice">¥0</div>
+            <div class="stat-label">平均价格</div>
+        </div>
+    </div>
+
+    <!-- 图表切换按钮 -->
+    <div class="tab-buttons">
+        <button class="tab-btn active" onclick="showChart('count')">店铺数量排行</button>
+        <button class="tab-btn" onclick="showChart('score')">评分排行</button>
+        <button class="tab-btn" onclick="showChart('price')">价格排行</button>
+    </div>
+
+    <!-- 图表区域 -->
+    <div class="chart-section">
+        <div class="section-title">
+            <span id="chartTitle">📊 商圈店铺数量Top20</span>
+        </div>
+        <div class="chart-container" id="circleChart"></div>
+    </div>
+
+    <!-- 数据表格 -->
+    <div class="data-table-container">
+        <div class="section-title">
+            <span>📋 商圈详细数据</span>
+        </div>
+        <div style="overflow-x: auto;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">排名</th>
+                        <th>商圈名称</th>
+                        <th style="width: 100px; text-align: center;">店铺数量</th>
+                        <th style="width: 120px; text-align: center;">平均评分</th>
+                        <th style="width: 120px; text-align: center;">平均价格</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in circle_data %}
+                    <tr onclick="viewCircleDetails('{{ item.business_circle }}')">
+                        <td style="text-align: center;">
+                            <span class="rank-badge
+                                {% if forloop.counter == 1 %}gold
+                                {% elif forloop.counter == 2 %}silver
+                                {% elif forloop.counter == 3 %}bronze
+                                {% endif %}">
+                                {{ forloop.counter }}
+                            </span>
+                        </td>
+                        <td class="circle-name">{{ item.business_circle|default:"未分类" }}</td>
+                        <td class="shop-count">{{ item.count }} 家</td>
+                        <td class="avg-score">
+                            {% if item.avg_score %}
+                                <div class="stars" title="评分: {{ item.avg_score|floatformat:2 }}">
+                                    {% with score=item.avg_score %}
+                                        {% for i in "12345" %}
+                                            {% if forloop.counter <= score %}
+                                                ★
+                                            {% else %}
+                                                ☆
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endwith %}
+                                </div>
+                                <div style="font-size: 12px; color: #7f8c8d;">
+                                    {{ item.avg_score|floatformat:2 }}
+                                </div>
+                            {% else %}
+                                <span style="color: #95a5a6;">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="avg-price">
+                            {% if item.avg_price %}
+                                ¥{{ item.avg_price|floatformat:0 }}
+                            {% else %}
+                                <span style="color: #95a5a6;">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 30px; color: #95a5a6;">
+                            😔 暂无商圈数据
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 图表实例
+    let chart = null;
+    let currentChartType = 'count';
+
+    // 初始化图表
+    function initChart(type = 'count') {
+        const chartDom = document.getElementById('circleChart');
+        if (!chartDom) return;
+
+        if (chart) {
+            chart.dispose();
+        }
+
+        chart = echarts.init(chartDom);
+
+        // 获取数据
+        const circleNames = {{ circle_names|safe }};
+        const circleCounts = {{ circle_counts|safe }};
+        const circleScores = {{ circle_avg_scores|safe }};
+
+        // 根据类型选择数据和标题
+        let data, title, color, unit;
+
+        switch(type) {
+            case 'score':
+                data = circleScores;
+                title = '商圈平均评分Top20';
+                color = new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: '#e74c3c' },
+                    { offset: 1, color: '#c0392b' }
+                ]);
+                unit = '分';
+                break;
+            case 'price':
+                // 这里需要从circle_data中提取价格数据
+                // 由于视图中没有单独传递价格数组，我们使用表格数据
+                data = [
+                    {% for item in circle_data %}
+                    {{ item.avg_price|default:0 }}{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                ];
+                title = '商圈平均价格Top20';
+                color = new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: '#2ecc71' },
+                    { offset: 1, color: '#27ae60' }
+                ]);
+                unit = '元';
+                break;
+            default:
+                data = circleCounts;
+                title = '商圈店铺数量Top20';
+                color = new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: '#3498db' },
+                    { offset: 1, color: '#2980b9' }
+                ]);
+                unit = '家';
+        }
+
+        const option = {
+            title: {
+                text: title,
+                left: 'center',
+                textStyle: {
+                    fontSize: 16,
+                    fontWeight: 'normal',
+                    color: '#2c3e50'
+                }
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow'
+                },
+                formatter: function(params) {
+                    const item = params[0];
+                    let content = `<div style="font-weight: bold; margin-bottom: 5px;">${item.name}</div>`;
+
+                    if (type === 'count') {
+                        content += `<div>店铺数量：<span style="color:#3498db;font-weight:bold">${item.value} 家</span></div>`;
+                    } else if (type === 'score') {
+                        content += `<div>平均评分：<span style="color:#e74c3c;font-weight:bold">${item.value} 分</span></div>`;
+                    } else {
+                        content += `<div>平均价格：<span style="color:#2ecc71;font-weight:bold">¥${item.value}</span></div>`;
+                    }
+
+                    return content;
+                }
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '10%',
+                top: '15%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                data: circleNames,
+                axisLabel: {
+                    rotate: 45,
+                    interval: 0,
+                    fontSize: 12,
+                    color: '#7f8c8d',
+                    formatter: function(value) {
+                        return value.length > 8 ? value.substring(0, 8) + '...' : value;
+                    }
+                },
+                axisLine: {
+                    lineStyle: {
+                        color: '#ecf0f1'
+                    }
+                }
+            },
+            yAxis: {
+                type: 'value',
+                name: type === 'count' ? '店铺数量' : type === 'score' ? '评分' : '价格',
+                nameTextStyle: {
+                    color: '#7f8c8d',
+                    fontSize: 12
+                },
+                axisLine: {
+                    show: true,
+                    lineStyle: {
+                        color: '#ecf0f1'
+                    }
+                },
+                splitLine: {
+                    lineStyle: {
+                        color: '#f8f9fa'
+                    }
+                }
+            },
+            series: [{
+                name: type === 'count' ? '店铺数量' : type === 'score' ? '评分' : '价格',
+                type: 'bar',
+                data: data,
+                barWidth: '60%',
+                itemStyle: {
+                    color: color,
+                    borderRadius: [4, 4, 0, 0]
+                },
+                label: {
+                    show: true,
+                    position: 'top',
+                    formatter: function(params) {
+                        return type === 'price' ? '¥' + params.value : params.value + unit;
+                    },
+                    fontSize: 12,
+                    fontWeight: 'bold',
+                    color: '#2c3e50'
+                },
+                emphasis: {
+                    itemStyle: {
+                        shadowColor: 'rgba(0, 0, 0, 0.3)',
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowOffsetY: 0
+                    }
+                }
+            }]
+        };
+
+        chart.setOption(option);
+        currentChartType = type;
+        document.getElementById('chartTitle').textContent = '📊 ' + title;
+
+        // 响应式调整
+        window.addEventListener('resize', function() {
+            chart.resize();
+        });
+    }
+
+    // 显示图表
+    function showChart(type) {
+        // 更新按钮状态
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+
+        // 更新图表
+        initChart(type);
+    }
+
+    // 计算统计数据
+    function calculateStats() {
+        const circleCounts = {{ circle_counts|safe }};
+        const circleScores = {{ circle_avg_scores|safe }};
+
+        // 计算总店铺数
+        const totalShops = circleCounts.reduce((sum, count) => sum + count, 0);
+
+        // 计算加权平均评分
+        let weightedScore = 0;
+        circleCounts.forEach((count, index) => {
+            weightedScore += circleScores[index] * count;
+        });
+        const avgScore = totalShops > 0 ? (weightedScore / totalShops).toFixed(2) : 0;
+
+        // 计算加权平均价格（从表格数据中提取）
+        const priceElements = document.querySelectorAll('.avg-price');
+        let totalPriceWeight = 0;
+        let totalCountForPrice = 0;
+
+        priceElements.forEach((el, index) => {
+            const priceText = el.textContent.trim();
+            if (priceText !== '-' && !priceText.includes('¥0')) {
+                const price = parseFloat(priceText.replace('¥', '').replace(',', ''));
+                const count = circleCounts[index];
+                if (!isNaN(price) && price > 0) {
+                    totalPriceWeight += price * count;
+                    totalCountForPrice += count;
+                }
+            }
+        });
+
+        const avgPrice = totalCountForPrice > 0 ? Math.round(totalPriceWeight / totalCountForPrice) : 0;
+
+        // 更新统计卡片
+        document.getElementById('totalShops').textContent = totalShops;
+        document.getElementById('avgScore').textContent = avgScore;
+        document.getElementById('avgPrice').textContent = '¥' + avgPrice;
+
+        // 动画效果
+        animateValue(document.getElementById('totalShops'), 0, totalShops, 1000);
+    }
+
+    // 数字动画
+    function animateValue(element, start, end, duration) {
+        const startTime = performance.now();
+        const step = (currentTime) => {
+            const elapsedTime = currentTime - startTime;
+            const progress = Math.min(elapsedTime / duration, 1);
+            const value = Math.floor(progress * (end - start) + start);
+            element.textContent = value;
+
+            if (progress < 1) {
+                requestAnimationFrame(step);
+            }
+        };
+        requestAnimationFrame(step);
+    }
+
+    // 查看商圈详情
+    function viewCircleDetails(circleName) {
+        alert(`查看商圈详情：${circleName}\n\n功能可扩展为：\n1. 显示该商圈所有店铺列表\n2. 在地图上定位该商圈\n3. 显示商圈评分分布\n4. 显示商圈热门菜系`);
+    }
+
+    // 页面加载完成后执行
+    document.addEventListener('DOMContentLoaded', function() {
+        // 初始化图表
+        if (typeof echarts !== 'undefined') {
+            initChart();
+        } else {
+            console.error('ECharts未加载');
+        }
+
+        // 计算统计信息
+        calculateStats();
+
+        // 为表格行添加悬停效果
+        const tableRows = document.querySelectorAll('.data-table tbody tr');
+        tableRows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = '#f8f9fa';
+            });
+            row.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = '';
+            });
+        });
+    });
+</script>
+{% endblock %}

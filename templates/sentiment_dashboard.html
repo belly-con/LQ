@@ -1,0 +1,692 @@
+{% extends 'base.html' %}
+{% block title %}评论情感分析{% endblock %}
+{% block content %}
+<style>
+    .sentiment-header {
+        background: linear-gradient(135deg, rgba(200, 180, 255, 0.2), rgba(160, 130, 230, 0.25));
+        padding: 30px;
+        border-radius: var(--border-radius-lg);
+        color: var(--dark-color);
+        margin-bottom: 30px;
+        text-align: center;
+        border: 1px solid rgba(200, 180, 255, 0.3);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+    }
+
+    .sentiment-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+
+    .stat-card {
+        background: rgba(255, 255, 255, 0.9);
+        padding: 25px 20px;
+        border-radius: var(--border-radius);
+        text-align: center;
+        box-shadow: var(--shadow-md);
+        transition: var(--transition);
+        border: 1px solid rgba(203, 213, 225, 0.3);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 160px;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+        border-color: rgba(200, 180, 255, 0.4);
+    }
+
+    .stat-icon {
+        font-size: 32px;
+        margin-bottom: 12px;
+        opacity: 0.8;
+    }
+
+    .stat-value {
+        font-size: 32px;
+        font-weight: 800;
+        margin: 8px 0;
+        line-height: 1;
+        letter-spacing: -0.5px;
+        min-height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .stat-label {
+        color: var(--gray-dark);
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-top: 8px;
+        min-height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .positive {
+        color: var(--success-color);
+        font-weight: 900;
+    }
+    .negative {
+        color: #ef4444;
+        font-weight: 900;
+    }
+    .neutral {
+        color: var(--warning-color);
+        font-weight: 900;
+    }
+
+    .chart-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        gap: 25px;
+        margin-top: 30px;
+    }
+
+    .chart-card {
+        background: white;
+        padding: 25px;
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-md);
+        border: 1px solid rgba(203, 213, 225, 0.3);
+        display: flex;
+        flex-direction: column;
+        min-height: 500px; /* 增加卡片整体高度 */
+        overflow: hidden; /* 防止内容溢出 */
+    }
+
+    .chart-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--dark-color);
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(203, 213, 225, 0.3);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0; /* 防止标题被压缩 */
+    }
+
+    .chart-title i {
+        color: var(--primary-color);
+        font-size: 18px;
+    }
+
+    .chart-container {
+        flex: 1;
+        min-height: 400px;
+        width: 100%;
+        position: relative; /* 为图表容器添加相对定位 */
+        overflow: hidden; /* 防止图表溢出 */
+    }
+
+    /* 确保图表内容不会溢出 */
+    .echarts {
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 380px; /* 确保图表有足够高度 */
+    }
+
+    .ranking-card {
+        margin-top: 30px;
+        min-height: 450px;
+    }
+
+    /* 响应式调整 */
+    @media (max-width: 1200px) {
+        .sentiment-stats {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .chart-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .chart-card {
+            min-height: 450px;
+        }
+
+        .chart-container {
+            min-height: 380px;
+        }
+    }
+
+    @media (max-width: 900px) {
+        .sentiment-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .stat-value {
+            font-size: 28px;
+        }
+
+        .chart-card {
+            min-height: 420px;
+        }
+
+        .chart-container {
+            min-height: 350px;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .sentiment-header {
+            padding: 24px 20px;
+        }
+
+        .sentiment-stats {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        .stat-card {
+            padding: 20px 16px;
+            min-height: 140px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+        }
+
+        .chart-card {
+            padding: 20px;
+            min-height: 400px;
+        }
+
+        .chart-container {
+            min-height: 320px;
+        }
+
+        .ranking-card {
+            min-height: 400px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .sentiment-header {
+            padding: 20px 16px;
+        }
+
+        .sentiment-stats {
+            gap: 12px;
+        }
+
+        .stat-card {
+            padding: 18px 14px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+        }
+
+        .chart-card {
+            padding: 16px;
+            min-height: 380px;
+        }
+
+        .chart-container {
+            min-height: 300px;
+        }
+
+        .ranking-card {
+            min-height: 380px;
+        }
+    }
+</style>
+
+<div class="sentiment-header">
+    <h1 style="margin:0 0 10px 0;font-size:28px;font-weight:800;">💬 评论情感分析</h1>
+    <p style="color: var(--gray-dark); font-size: 15px;">基于自然语言处理技术的评论情感分析结果</p>
+</div>
+
+<div class="sentiment-stats">
+    <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-label">总评论数</div>
+        <div class="stat-value" id="total-comments">{{ total_comments }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-label">已分析</div>
+        <div class="stat-value" id="analyzed-comments">{{ analyzed_comments }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">👍</div>
+        <div class="stat-label">正面评论</div>
+        <div class="stat-value positive" id="positive-count">{{ positive_count }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">👎</div>
+        <div class="stat-label">负面评论</div>
+        <div class="stat-value negative" id="negative-count">{{ negative_count }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">😐</div>
+        <div class="stat-label">中性评论</div>
+        <div class="stat-value neutral" id="neutral-count">{{ neutral_count }}</div>
+    </div>
+</div>
+
+<div class="chart-grid">
+    <div class="chart-card">
+        <div class="chart-title">
+            <i class="fas fa-chart-pie"></i>
+            情感分布
+        </div>
+        <div class="chart-container" id="sentimentPieChart"></div>
+    </div>
+
+    <div class="chart-card">
+        <div class="chart-title">
+            <i class="fas fa-chart-line"></i>
+            情感趋势
+        </div>
+        <div class="chart-container" id="sentimentTrendChart"></div>
+    </div>
+</div>
+
+<div class="chart-card ranking-card">
+    <div class="chart-title">
+        <i class="fas fa-trophy"></i>
+        店铺好评榜 Top10
+    </div>
+    <div class="chart-container" id="shopRankingChart"></div>
+</div>
+
+<script>
+    // 数字动画效果
+    function animateValue(element, start, end, duration) {
+        if (start === end) return;
+
+        let startTime = null;
+        const animate = (currentTime) => {
+            if (!startTime) startTime = currentTime;
+            const timeElapsed = currentTime - startTime;
+            const progress = Math.min(timeElapsed / duration, 1);
+
+            const currentValue = Math.floor(progress * (end - start) + start);
+            element.textContent = currentValue.toLocaleString();
+
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            }
+        };
+
+        requestAnimationFrame(animate);
+    }
+
+    // 页面加载时执行动画
+    document.addEventListener('DOMContentLoaded', function() {
+        // 获取实际值
+        const totalComments = parseInt('{{ total_comments }}') || 0;
+        const analyzedComments = parseInt('{{ analyzed_comments }}') || 0;
+        const positiveCount = parseInt('{{ positive_count }}') || 0;
+        const negativeCount = parseInt('{{ negative_count }}') || 0;
+        const neutralCount = parseInt('{{ neutral_count }}') || 0;
+
+        // 为每个统计数字添加动画
+        const elements = {
+            'total-comments': totalComments,
+            'analyzed-comments': analyzedComments,
+            'positive-count': positiveCount,
+            'negative-count': negativeCount,
+            'neutral-count': neutralCount
+        };
+
+        // 延迟执行动画
+        setTimeout(() => {
+            for (const [id, value] of Object.entries(elements)) {
+                const element = document.getElementById(id);
+                if (element) {
+                    animateValue(element, 0, value, 1000);
+                }
+            }
+        }, 500);
+
+        // 图表初始化
+        initCharts();
+
+        // 监听窗口大小变化，重新调整图表
+        window.addEventListener('resize', function() {
+            setTimeout(initCharts, 100);
+        });
+    });
+
+    // 初始化图表
+    function initCharts() {
+        // 获取容器尺寸
+        const pieChartContainer = document.getElementById('sentimentPieChart');
+        const trendChartContainer = document.getElementById('sentimentTrendChart');
+        const rankingChartContainer = document.getElementById('shopRankingChart');
+
+        // 计算合适的图表高度
+        const chartHeight = Math.max(
+            pieChartContainer.clientHeight - 20,
+            trendChartContainer.clientHeight - 20,
+            rankingChartContainer.clientHeight - 20,
+            350
+        );
+
+        // 情感分布饼图
+        var pieChart = echarts.init(document.getElementById('sentimentPieChart'));
+
+        // 计算百分比
+        const total = {{ total_comments }};
+        const positive = {{ positive_count }};
+        const negative = {{ negative_count }};
+        const neutral = {{ neutral_count }};
+
+        const positivePercent = total > 0 ? ((positive / total) * 100).toFixed(1) : 0;
+        const negativePercent = total > 0 ? ((negative / total) * 100).toFixed(1) : 0;
+        const neutralPercent = total > 0 ? ((neutral / total) * 100).toFixed(1) : 0;
+
+        // 根据容器大小调整标签位置
+        const pieRadius = pieChartContainer.clientHeight < 400 ? ['35%', '55%'] : ['40%', '65%'];
+        const labelFontSize = pieChartContainer.clientHeight < 400 ? 11 : 12;
+        const legendBottom = pieChartContainer.clientHeight < 400 ? 15 : 10;
+
+        pieChart.setOption({
+            tooltip: {
+                trigger: 'item',
+                formatter: '{b}: {c} ({d}%)'
+            },
+            legend: {
+                bottom: legendBottom,
+                textStyle: {
+                    fontSize: labelFontSize
+                },
+                itemHeight: 10,
+                itemWidth: 10,
+                itemGap: 5
+            },
+            series: [{
+                type: 'pie',
+                radius: pieRadius,
+                avoidLabelOverlap: true,
+                itemStyle: {
+                    borderRadius: 6,
+                    borderColor: '#fff',
+                    borderWidth: 2
+                },
+                label: {
+                    show: true,
+                    formatter: function(params) {
+                        // 在标签较多或容器较小时显示更简洁的标签
+                        if (pieChartContainer.clientHeight < 400) {
+                            return params.name + '\n' + params.percent + '%';
+                        }
+                        return params.name + '\n' + params.value.toLocaleString() + '条\n(' + params.percent + '%)';
+                    },
+                    fontSize: labelFontSize,
+                    lineHeight: labelFontSize + 2,
+                    overflow: 'truncate'
+                },
+                emphasis: {
+                    label: {
+                        show: true,
+                        fontSize: labelFontSize + 2,
+                        fontWeight: 'bold'
+                    }
+                },
+                labelLine: {
+                    length: pieChartContainer.clientHeight < 400 ? 15 : 20,
+                    length2: pieChartContainer.clientHeight < 400 ? 25 : 30,
+                    smooth: true
+                },
+                data: [
+                    {
+                        value: positive,
+                        name: '正面',
+                        itemStyle: {
+                            color: '#52c41a',
+                            borderColor: '#52c41a'
+                        }
+                    },
+                    {
+                        value: negative,
+                        name: '负面',
+                        itemStyle: {
+                            color: '#ef4444',
+                            borderColor: '#ef4444'
+                        }
+                    },
+                    {
+                        value: neutral,
+                        name: '中性',
+                        itemStyle: {
+                            color: '#f59e0b',
+                            borderColor: '#f59e0b'
+                        }
+                    }
+                ]
+            }]
+        });
+
+        // 情感趋势折线图
+        var trendChart = echarts.init(document.getElementById('sentimentTrendChart'));
+        var trendData = {{ sentiment_trend|safe }};
+
+        // 根据容器大小调整
+        const trendLabelFontSize = trendChartContainer.clientHeight < 400 ? 10 : 12;
+        const trendLegendBottom = trendChartContainer.clientHeight < 400 ? 15 : 20;
+        const trendGridBottom = trendChartContainer.clientHeight < 400 ? '25%' : '20%';
+        const rotateAngle = trendChartContainer.clientHeight < 400 ? 30 : 45;
+
+        trendChart.setOption({
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'cross'
+                }
+            },
+            legend: {
+                data: ['正面', '负面', '中性'],
+                bottom: trendLegendBottom,
+                textStyle: {
+                    fontSize: trendLabelFontSize
+                },
+                itemHeight: 10,
+                itemWidth: 10,
+                itemGap: 5
+            },
+            grid: {
+                left: '5%',
+                right: '5%',
+                bottom: trendGridBottom,
+                top: '8%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                data: trendData.years,
+                axisLabel: {
+                    fontSize: trendLabelFontSize,
+                    rotate: rotateAngle,
+                    margin: 12,
+                    interval: 0
+                },
+                axisLine: {
+                    lineStyle: {
+                        color: '#cbd5e1'
+                    }
+                }
+            },
+            yAxis: {
+                type: 'value',
+                name: '评论数',
+                axisLabel: {
+                    fontSize: trendLabelFontSize
+                },
+                axisLine: {
+                    lineStyle: {
+                        color: '#cbd5e1'
+                    }
+                },
+                splitLine: {
+                    lineStyle: {
+                        color: '#f1f5f9',
+                        type: 'dashed'
+                    }
+                }
+            },
+            series: [
+                {
+                    name: '正面',
+                    type: 'line',
+                    data: trendData.positive,
+                    smooth: true,
+                    itemStyle: { color: '#52c41a' },
+                    lineStyle: {
+                        width: 2.5
+                    },
+                    areaStyle: {
+                        opacity: 0.1,
+                        color: '#52c41a'
+                    },
+                    symbol: 'circle',
+                    symbolSize: trendChartContainer.clientHeight < 400 ? 4 : 6
+                },
+                {
+                    name: '负面',
+                    type: 'line',
+                    data: trendData.negative,
+                    smooth: true,
+                    itemStyle: { color: '#ef4444' },
+                    lineStyle: {
+                        width: 2.5
+                    },
+                    areaStyle: {
+                        opacity: 0.1,
+                        color: '#ef4444'
+                    },
+                    symbol: 'circle',
+                    symbolSize: trendChartContainer.clientHeight < 400 ? 4 : 6
+                },
+                {
+                    name: '中性',
+                    type: 'line',
+                    data: trendData.neutral,
+                    smooth: true,
+                    itemStyle: { color: '#f59e0b' },
+                    lineStyle: {
+                        width: 2.5
+                    },
+                    areaStyle: {
+                        opacity: 0.1,
+                        color: '#f59e0b'
+                    },
+                    symbol: 'circle',
+                    symbolSize: trendChartContainer.clientHeight < 400 ? 4 : 6
+                }
+            ]
+        });
+
+        // 店铺好评榜
+        var rankingChart = echarts.init(document.getElementById('shopRankingChart'));
+        var shopRanking = {{ shop_ranking|safe }};
+
+        // 根据容器大小调整
+        const rankingLabelFontSize = rankingChartContainer.clientHeight < 400 ? 10 : 12;
+        const rankingLeft = rankingChartContainer.clientHeight < 400 ? '35%' : '30%';
+
+        rankingChart.setOption({
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow'
+                },
+                formatter: function(params) {
+                    const index = shopRanking.length - 1 - params[0].dataIndex;
+                    return shopRanking[index]?.shop_name + '<br/>' +
+                           '正面评论占比: ' + params[0].value + '%<br/>' +
+                           '总评论数: ' + (shopRanking[index]?.total_comments || 0);
+                }
+            },
+            grid: {
+                left: rankingLeft,
+                right: '8%',
+                bottom: '5%',
+                top: '5%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'value',
+                name: '正面评论占比(%)',
+                max: 100,
+                axisLabel: {
+                    formatter: '{value}%',
+                    fontSize: rankingLabelFontSize
+                },
+                axisLine: {
+                    lineStyle: {
+                        color: '#cbd5e1'
+                    }
+                },
+                splitLine: {
+                    lineStyle: {
+                        color: '#f1f5f9',
+                        type: 'dashed'
+                    }
+                }
+            },
+            yAxis: {
+                type: 'category',
+                data: shopRanking.map(s => s.shop_name).reverse(),
+                axisLabel: {
+                    interval: 0,
+                    fontSize: rankingLabelFontSize,
+                    width: rankingChartContainer.clientHeight < 400 ? 150 : 200,
+                    overflow: 'truncate',
+                    color: '#1e293b'
+                },
+                axisLine: {
+                    show: false
+                },
+                axisTick: {
+                    show: false
+                }
+            },
+            series: [{
+                type: 'bar',
+                data: shopRanking.map(s => s.positive_rate).reverse(),
+                itemStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                        { offset: 0, color: 'rgba(200, 180, 255, 0.8)' },
+                        { offset: 1, color: 'rgba(160, 130, 230, 0.8)' }
+                    ]),
+                    borderRadius: [0, 6, 6, 0]
+                },
+                label: {
+                    show: true,
+                    position: 'right',
+                    formatter: '{c}%',
+                    fontSize: rankingLabelFontSize,
+                    fontWeight: 'bold'
+                },
+                barWidth: '55%'
+            }]
+        });
+
+        // 强制图表重新渲染以适应容器
+        setTimeout(() => {
+            pieChart.resize();
+            trendChart.resize();
+            rankingChart.resize();
+        }, 50);
+    }
+</script>
+{% endblock %}

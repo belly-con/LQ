@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block title %}审核申请 - {{ app.shop_name }}{% endblock %}
+{% block content %}
+<style>
+.review-detail-card{background:white;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);overflow:hidden;max-width:780px;margin:0 auto}
+.review-detail-header{background:linear-gradient(135deg,#456bc4,#8e5de0);padding:24px 28px;color:white;display:flex;align-items:center;justify-content:space-between}
+.review-detail-header h2{font-size:20px;font-weight:800;margin:0}
+.review-detail-body{padding:28px}
+.info-section{margin-bottom:28px}
+.info-section h3{font-size:14px;font-weight:700;color:#456bc4;text-transform:uppercase;letter-spacing:.5px;margin:0 0 14px;padding-bottom:8px;border-bottom:2px solid #eff6ff;display:flex;align-items:center;gap:8px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.info-item label{font-size:12px;font-weight:700;color:#9ca3af;text-transform:uppercase;display:block;margin-bottom:4px}
+.info-item p{font-size:15px;color:#111;margin:0;font-weight:500}
+.info-item.full{grid-column:1/-1}
+.action-panel{background:#f8fafc;border-radius:14px;padding:24px;border:1px solid #e5e7eb}
+.action-panel h3{font-size:15px;font-weight:700;color:#111;margin:0 0 16px}
+.action-btns{display:flex;gap:12px;margin-top:16px}
+.btn-approve{padding:12px 28px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:24px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px}
+.btn-approve:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(16,185,129,.35)}
+.btn-reject{padding:12px 28px;background:linear-gradient(135deg,#ef4444,#dc2626);color:white;border:none;border-radius:24px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px}
+.btn-reject:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(239,68,68,.35)}
+.reject-reason-area{width:100%;padding:12px 16px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:inherit;outline:none;resize:vertical;min-height:80px;transition:all .2s;box-sizing:border-box;display:none;margin-top:12px}
+.reject-reason-area:focus{border-color:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.1)}
+.result-msg{padding:14px 18px;border-radius:12px;font-size:14px;font-weight:600;display:none;align-items:center;gap:10px;margin-top:16px}
+.result-msg.success{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;display:flex}
+.result-msg.error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca;display:flex}
+.status-badge{padding:5px 16px;border-radius:20px;font-size:12px;font-weight:700}
+.status-badge.pending{background:rgba(255,255,255,.2);color:white;border:1px solid rgba(255,255,255,.4)}
+.status-badge.approved{background:#ecfdf5;color:#065f46}
+.status-badge.rejected{background:#fef2f2;color:#991b1b}
+</style>
+
+<div class="page-header">
+    <div class="page-title"><i class="fas fa-clipboard-check"></i> 审核申请详情</div>
+    <p class="page-subtitle">仔细核查店铺信息后进行审核操作</p>
+</div>
+
+<div class="review-detail-card">
+    <div class="review-detail-header">
+        <h2>{{ app.shop_name }}</h2>
+        <div class="status-badge {{ app.status }}">
+            {% if app.status == 'pending' %}⏳ 待审核
+            {% elif app.status == 'approved' %}✅ 已通过
+            {% else %}❌ 已驳回{% endif %}
+        </div>
+    </div>
+    <div class="review-detail-body">
+
+        <!-- 商家信息 -->
+        <div class="info-section">
+            <h3><i class="fas fa-user"></i> 申请商家</h3>
+            <div class="info-grid">
+                <div class="info-item"><label>账号</label><p>{{ app.merchant.username }}</p></div>
+                <div class="info-item"><label>商家名称</label><p>{{ app.merchant.merchant_profile.business_name }}</p></div>
+                <div class="info-item"><label>联系电话</label><p>{{ app.merchant.merchant_profile.contact_phone }}</p></div>
+                <div class="info-item"><label>执照/身份证</label><p>{{ app.merchant.merchant_profile.id_card_no|default:"未填写" }}</p></div>
+                <div class="info-item"><label>申请时间</label><p>{{ app.created_at|date:"Y年m月d日 H:i" }}</p></div>
+            </div>
+        </div>
+
+        <!-- 店铺信息 -->
+        <div class="info-section">
+            <h3><i class="fas fa-store"></i> 店铺信息</h3>
+            <div class="info-grid">
+                <div class="info-item"><label>菜系类型</label><p>{{ app.food_type }}</p></div>
+                <div class="info-item"><label>人均消费</label><p>¥{{ app.avg_price|floatformat:0 }}</p></div>
+                <div class="info-item"><label>所在区县</label><p>{{ app.county }}</p></div>
+                <div class="info-item"><label>所属商圈</label><p>{{ app.business_circle|default:"未填写" }}</p></div>
+                <div class="info-item full"><label>详细地址</label><p>{{ app.location }}</p></div>
+                <div class="info-item"><label>店铺电话</label><p>{{ app.phone|default:"未填写" }}</p></div>
+                <div class="info-item"><label>营业时间</label><p>{{ app.business_hours|default:"未填写" }}</p></div>
+                {% if app.description %}
+                <div class="info-item full"><label>店铺简介</label><p>{{ app.description }}</p></div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 审核操作 -->
+        {% if app.status == 'pending' %}
+        <div class="action-panel">
+            <h3>执行审核操作</h3>
+            <p style="font-size:14px;color:#6b7280;margin:0 0 8px">审核通过后，店铺将立即录入数据库并向所有用户展示。驳回时请填写具体原因，方便商家修改重新申请。</p>
+            <div id="resultMsg" class="result-msg"></div>
+            <div class="action-btns">
+                <button class="btn-approve" onclick="doReview('approve')">
+                    <i class="fas fa-check"></i> 通过申请，立即上架
+                </button>
+                <button class="btn-reject" onclick="showRejectForm()">
+                    <i class="fas fa-times"></i> 驳回申请
+                </button>
+            </div>
+            <textarea id="rejectReason" class="reject-reason-area" placeholder="请填写驳回理由（必填），商家可据此修改后重新提交..."></textarea>
+            <div id="rejectSubmitRow" style="display:none;margin-top:10px">
+                <button class="btn-reject" onclick="doReview('reject')">
+                    <i class="fas fa-paper-plane"></i> 确认驳回
+                </button>
+                <button onclick="hideRejectForm()" style="padding:12px 20px;background:#f3f4f6;color:#374151;border:none;border-radius:24px;font-size:14px;font-weight:600;cursor:pointer;margin-left:10px">取消</button>
+            </div>
+        </div>
+        {% else %}
+        <div class="action-panel" style="background:#f9fafb">
+            <h3>审核结果</h3>
+            {% if app.reviewed_at %}
+            <p style="font-size:14px;color:#6b7280;margin:0">审核时间：{{ app.reviewed_at|date:"Y年m月d日 H:i" }}
+               &nbsp;·&nbsp; 审核人：{{ app.reviewed_by.username|default:"系统" }}</p>
+            {% endif %}
+            {% if app.status == 'rejected' and app.reject_reason %}
+            <div style="margin-top:12px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 16px;font-size:14px;color:#991b1b">
+                <strong>驳回理由：</strong>{{ app.reject_reason }}
+            </div>
+            {% endif %}
+            {% if app.status == 'approved' and app.approved_shop %}
+            <div style="margin-top:12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:12px 16px;font-size:14px;color:#065f46">
+                <strong>已上架店铺：</strong>{{ app.approved_shop.shop_name }}（{{ app.approved_shop.shop_id }}）
+                <a href="/user/shop_detail/{{ app.approved_shop.shop_id }}/" style="color:#065f46;margin-left:12px">查看 →</a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div style="margin-top:20px">
+            <a href="/user/admin_review/" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f3f4f6;color:#374151;border-radius:20px;font-size:14px;font-weight:600;text-decoration:none">
+                <i class="fas fa-arrow-left"></i> 返回申请列表
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const appId = {{ app.id }};
+const csrfToken = '{{ csrf_token }}';
+
+function showRejectForm() {
+    document.getElementById('rejectReason').style.display = 'block';
+    document.getElementById('rejectSubmitRow').style.display = 'block';
+    document.getElementById('rejectReason').focus();
+}
+
+function hideRejectForm() {
+    document.getElementById('rejectReason').style.display = 'none';
+    document.getElementById('rejectSubmitRow').style.display = 'none';
+}
+
+async function doReview(action) {
+    const body = { action };
+    if (action === 'reject') {
+        const reason = document.getElementById('rejectReason').value.trim();
+        if (!reason) { alert('请填写驳回理由'); return; }
+        body.reject_reason = reason;
+    }
+
+    const res = await fetch(`/user/admin_review/${appId}/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    const msgEl = document.getElementById('resultMsg');
+    msgEl.className = 'result-msg ' + (data.success ? 'success' : 'error');
+    msgEl.innerHTML = `<i class="fas fa-${data.success ? 'check' : 'times'}-circle"></i> ${data.msg}`;
+    msgEl.style.display = 'flex';
+
+    if (data.success) {
+        // 1秒后刷新页面展示最新状态
+        setTimeout(() => location.reload(), 1200);
+    }
+}
+</script>
+{% endblock %}

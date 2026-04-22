@@ -1,0 +1,590 @@
+{% extends 'base.html' %}
+{% block title %}偏好设置 · 京城味蕾管家{% endblock %}
+
+{% block content %}
+<style>
+    .pref-form-card {
+        background: white;
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--glass-border);
+        overflow: hidden;
+    }
+
+    .pref-form-header {
+        background: linear-gradient(135deg, #456bc4 0%, #8e5de0 100%);
+        padding: 28px 32px;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+    }
+
+    .pref-form-header-icon {
+        width: 56px;
+        height: 56px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        border: 2px solid rgba(255,255,255,0.35);
+        flex-shrink: 0;
+    }
+
+    .pref-form-header-info h2 {
+        font-size: 22px;
+        font-weight: 800;
+        margin: 0 0 6px;
+    }
+
+    .pref-form-header-info p {
+        font-size: 14px;
+        opacity: 0.85;
+        margin: 0;
+        line-height: 1.5;
+    }
+
+    .pref-form-body {
+        padding: 32px;
+    }
+
+    /* 区块标题 */
+    .section-label {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--primary-color);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .section-label i {
+        font-size: 14px;
+    }
+
+    .form-section {
+        margin-bottom: 32px;
+        padding-bottom: 28px;
+        border-bottom: 1px solid rgba(203,213,225,0.3);
+    }
+
+    .form-section:last-of-type {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    /* 标签多选 */
+    .tag-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .tag-option {
+        position: relative;
+    }
+
+    .tag-option input[type="checkbox"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .tag-option label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        border: 1.5px solid rgba(203,213,225,0.6);
+        background: #f8fafc;
+        color: var(--gray-dark);
+        user-select: none;
+    }
+
+    .tag-option input:checked + label {
+        background: linear-gradient(135deg, rgba(69,107,196,0.12), rgba(142,93,224,0.12));
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+    }
+
+    .tag-option label:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-sm);
+    }
+
+    /* 单选按钮组 */
+    .radio-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+    }
+
+    .radio-option {
+        position: relative;
+    }
+
+    .radio-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .radio-option label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 18px 16px;
+        border-radius: var(--border-radius);
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        border: 1.5px solid rgba(203,213,225,0.5);
+        background: #f8fafc;
+        color: var(--gray-dark);
+        text-align: center;
+        user-select: none;
+    }
+
+    .radio-option label .icon {
+        font-size: 28px;
+        line-height: 1;
+    }
+
+    .radio-option label .sub {
+        font-size: 11px;
+        font-weight: 400;
+        color: #94a3b8;
+        margin-top: 2px;
+    }
+
+    .radio-option input:checked + label {
+        background: linear-gradient(135deg, rgba(69,107,196,0.1), rgba(142,93,224,0.1));
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        box-shadow: 0 4px 12px rgba(69,107,196,0.15);
+    }
+
+    .radio-option label:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-md);
+    }
+
+    /* 文本输入 */
+    .form-input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1.5px solid rgba(203,213,225,0.6);
+        border-radius: var(--border-radius-sm);
+        font-size: 14px;
+        font-family: inherit;
+        color: var(--dark-color);
+        background: #f8fafc;
+        outline: none;
+        transition: var(--transition);
+        box-sizing: border-box;
+    }
+
+    .form-input:focus {
+        border-color: var(--primary-color);
+        background: white;
+        box-shadow: 0 0 0 3px rgba(69,107,196,0.1);
+    }
+
+    .form-input::placeholder { color: #94a3b8; }
+
+    .input-hint-text {
+        font-size: 12px;
+        color: #94a3b8;
+        margin-top: 6px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* 开关 */
+    .toggle-group {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .toggle-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        border: 1.5px solid rgba(203,213,225,0.5);
+        border-radius: var(--border-radius);
+        background: #f8fafc;
+        cursor: pointer;
+        transition: var(--transition);
+        flex: 1;
+        min-width: 180px;
+    }
+
+    .toggle-item:hover {
+        border-color: var(--primary-color);
+        background: var(--primary-lighter);
+    }
+
+    .toggle-item input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        accent-color: var(--primary-color);
+        cursor: pointer;
+    }
+
+    .toggle-item-info .title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--dark-color);
+    }
+
+    .toggle-item-info .desc {
+        font-size: 12px;
+        color: #94a3b8;
+        margin-top: 2px;
+    }
+
+    .toggle-item-icon {
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+
+    /* 底部按钮区 */
+    .form-footer {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(203,213,225,0.3);
+    }
+
+    .btn-save {
+        padding: 13px 32px;
+        background: linear-gradient(135deg, #456bc4, #8e5de0);
+        color: white;
+        border: none;
+        border-radius: 24px;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: var(--transition);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 14px rgba(69,107,196,0.3);
+    }
+
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(69,107,196,0.4);
+    }
+
+    .btn-ai-link {
+        padding: 13px 24px;
+        background: rgba(69,107,196,0.1);
+        color: var(--primary-color);
+        border: 1.5px solid rgba(69,107,196,0.25);
+        border-radius: 24px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .btn-ai-link:hover {
+        background: rgba(69,107,196,0.15);
+        transform: translateY(-1px);
+    }
+
+    /* 消息提示 */
+    .pref-alert {
+        border-radius: var(--border-radius);
+        padding: 14px 18px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .pref-alert.success {
+        background: rgba(16,185,129,0.1);
+        color: #065f46;
+        border: 1px solid rgba(16,185,129,0.2);
+    }
+
+    .pref-alert.error {
+        background: rgba(239,68,68,0.08);
+        color: #991b1b;
+        border: 1px solid rgba(239,68,68,0.2);
+    }
+
+    @media (max-width: 768px) {
+        .pref-form-body { padding: 20px; }
+        .pref-form-header { padding: 20px; }
+        .radio-group { grid-template-columns: repeat(2, 1fr); }
+        .toggle-group { flex-direction: column; }
+    }
+</style>
+
+<!-- 页面标题 -->
+<div class="page-header">
+    <div class="page-title">
+        <i class="fas fa-sliders-h"></i>
+        个性化偏好设置
+    </div>
+    <p class="page-subtitle">设置你的口味偏好、饮食禁忌和生活习惯，让 AI 助手为你提供千人千面的精准推荐。</p>
+</div>
+
+<div class="pref-form-card">
+    <!-- 卡片头部 -->
+    <div class="pref-form-header">
+        <div class="pref-form-header-icon">🍽️</div>
+        <div class="pref-form-header-info">
+            <h2>告诉我你的饮食偏好</h2>
+            <p>这些信息仅用于 AI 推荐，帮助"京城味蕾管家"更了解你。<br>支持随时修改，立即生效。</p>
+        </div>
+    </div>
+
+    <div class="pref-form-body">
+        {% if msg %}
+        <div class="pref-alert {{ msg_type }}">
+            <i class="fas {% if msg_type == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %}"></i>
+            {{ msg }}
+        </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'user_profile_edit' %}">
+            {% csrf_token %}
+
+            <!-- 1. 口味偏好 -->
+            <div class="form-section">
+                <div class="section-label">
+                    <i class="fas fa-fire"></i>
+                    口味偏好（可多选）
+                </div>
+                <div class="tag-group">
+                        <div class="tag-option">
+                        <input type="checkbox" name="flavor_tags" id="fl_la" value="辣"
+                            {% if "辣" in profile.flavor_pref %}checked{% endif %}>
+                        <label for="fl_la">🌶️ 辣</label>
+                    </div>
+                    <div class="tag-option">
+                        <input type="checkbox" name="flavor_tags" id="fl_mala" value="麻辣"
+                            {% if "麻辣" in profile.flavor_pref %}checked{% endif %}>
+                        <label for="fl_mala">🔥 麻辣</label>
+                    </div>
+                    <div class="tag-option">
+                        <input type="checkbox" name="flavor_tags" id="fl_sweet" value="甜"
+                            {% if "甜" in profile.flavor_pref %}checked{% endif %}>
+                        <label for="fl_sweet">🍯 甜</label>
+                    </div>
+                    <div class="tag-option">
+                        <input type="checkbox" name="flavor_tags" id="fl_salty" value="咸鲜"
+                            {% if "咸鲜" in profile.flavor_pref %}checked{% endif %}>
+                        <label for="fl_salty">🧂 咸鲜</label>
+                    </div>
+                    <div class="tag-option">
+                        <input type="checkbox" name="flavor_tags" id="fl_light" value="清淡"
+                            {% if "清淡" in profile.flavor_pref %}checked{% endif %}>
+                        <label for="fl_light">🥗 清淡</label>
+                    </div>
+                    <div class="tag-option">
+                        <input type="checkbox" name="flavor_tags" id="fl_sour" value="酸"
+                            {% if "酸" in profile.flavor_pref %}checked{% endif %}>
+                        <label for="fl_sour">🍋 酸</label>
+                    </div>
+                    <div class="tag-option">
+                        <input type="checkbox" name="flavor_tags" id="fl_heavy" value="重口味"
+                            {% if "重口味" in profile.flavor_pref %}checked{% endif %}>
+                        <label for="fl_heavy">💪 重口味</label>
+                    </div>
+                    <div class="tag-option">
+                        <input type="checkbox" name="flavor_tags" id="fl_orig" value="原味"
+                            {% if "原味" in profile.flavor_pref %}checked{% endif %}>
+                        <label for="fl_orig">🌿 原味</label>
+                    </div>
+                </div>
+                <div class="input-hint-text" style="margin-top:12px;">
+                    <i class="fas fa-info-circle"></i>
+                    或手动输入其他口味：
+                </div>
+                <input type="text" class="form-input" name="flavor_pref" id="flavor_pref_input"
+                       style="margin-top:8px;" placeholder="如：家常味、甜辣、奶香…"
+                       value="{{ profile.flavor_pref }}">
+            </div>
+
+            <!-- 2. 饮食禁忌 -->
+            <div class="form-section">
+                <div class="section-label">
+                    <i class="fas fa-ban"></i>
+                    饮食禁忌 / 特殊要求
+                </div>
+                <textarea class="form-input" name="dietary_restrictions" rows="3"
+                          placeholder="例如：不吃香菜、清真饮食、素食、海鲜过敏、坚果过敏…">{{ profile.dietary_restrictions }}</textarea>
+                <div class="input-hint-text">
+                    <i class="fas fa-shield-alt"></i>
+                    AI 推荐时会将此列为最高优先级约束
+                </div>
+            </div>
+
+            <!-- 3. 消费区间 -->
+            <div class="form-section">
+                <div class="section-label">
+                    <i class="fas fa-wallet"></i>
+                    常用人均消费区间
+                </div>
+                <div class="radio-group">
+                    {% for val, label in budget_choices %}
+                    <div class="radio-option">
+                        <input type="radio" name="avg_budget" id="budget_{{ val }}" value="{{ val }}"
+                               {% if profile.avg_budget == val %}checked{% endif %}>
+                        <label for="budget_{{ val }}">
+                            <span class="icon">
+                                {% if val == 'lt50' %}🍜
+                                {% elif val == '50_150' %}🍱
+                                {% elif val == '150_500' %}🥩
+                                {% else %}🍾{% endif %}
+                            </span>
+                            {{ label }}
+                            <span class="sub">
+                                {% if val == 'lt50' %}学生党 / 实惠首选
+                                {% elif val == '50_150' %}日常聚餐主力
+                                {% elif val == '150_500' %}品质享受
+                                {% else %}商务/高端场合{% endif %}
+                            </span>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 4. 常驻区域 -->
+            <div class="form-section">
+                <div class="section-label">
+                    <i class="fas fa-map-marker-alt"></i>
+                    常驻 / 活动区域
+                </div>
+                <input type="text" class="form-input" name="frequent_areas"
+                       placeholder="如：海淀、朝阳、西城（多个用逗号分隔）"
+                       value="{{ profile.frequent_areas }}">
+                <div class="input-hint-text">
+                    <i class="fas fa-location-arrow"></i>
+                    用于优先推荐你附近的店铺，AI 会优先匹配这些区域
+                </div>
+            </div>
+
+            <!-- 5. 推荐场景偏好 -->
+            <div class="form-section">
+                <div class="section-label">
+                    <i class="fas fa-balance-scale"></i>
+                    推荐优先级偏好
+                </div>
+                <div class="radio-group">
+                    {% for val, label in scene_choices %}
+                    <div class="radio-option">
+                        <input type="radio" name="scene_weight" id="scene_{{ val }}" value="{{ val }}"
+                               {% if profile.scene_weight == val %}checked{% endif %}>
+                        <label for="scene_{{ val }}">
+                            <span class="icon">
+                                {% if val == 'taste_first' %}😋
+                                {% elif val == 'env_first' %}🏮
+                                {% elif val == 'price_first' %}💰
+                                {% else %}⚖️{% endif %}
+                            </span>
+                            {{ label }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 6. 特殊需求 -->
+            <div class="form-section">
+                <div class="section-label">
+                    <i class="fas fa-star"></i>
+                    特殊需求标记
+                </div>
+                <div class="toggle-group">
+                    <label class="toggle-item">
+                        <input type="checkbox" name="has_car" {% if profile.has_car %}checked{% endif %}>
+                        <span class="toggle-item-icon">🚗</span>
+                        <div class="toggle-item-info">
+                            <div class="title">需要停车位</div>
+                            <div class="desc">推荐时优先显示有停车场的餐厅</div>
+                        </div>
+                    </label>
+                    <label class="toggle-item">
+                        <input type="checkbox" name="has_child" {% if profile.has_child %}checked{% endif %}>
+                        <span class="toggle-item-icon">👶</span>
+                        <div class="toggle-item-info">
+                            <div class="title">携带儿童</div>
+                            <div class="desc">推荐有儿童座椅、亲子友好的餐厅</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 底部按钮 -->
+            <div class="form-footer">
+                <button type="submit" class="btn-save">
+                    <i class="fas fa-save"></i>
+                    保存偏好设置
+                </button>
+                <a href="{% url 'ai_assistant' %}" class="btn-ai-link">
+                    <i class="fas fa-comments"></i>
+                    去和 AI 助手聊聊
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 口味标签选中时，同步到隐藏输入框
+    function syncFlavorTags() {
+        const checked = [...document.querySelectorAll('input[name="flavor_tags"]:checked')]
+            .map(el => el.value);
+        const manual = document.getElementById('flavor_pref_input').value
+            .split(',').map(s => s.trim()).filter(s => s && !checked.includes(s));
+        document.getElementById('flavor_pref_input').value = [...checked, ...manual].join(',');
+    }
+
+    document.querySelectorAll('input[name="flavor_tags"]').forEach(el => {
+        el.addEventListener('change', syncFlavorTags);
+    });
+
+    // 提交前合并标签和手动输入
+    document.querySelector('form').addEventListener('submit', function() {
+        syncFlavorTags();
+    });
+</script>
+{% endblock %}

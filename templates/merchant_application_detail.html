@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block title %}申请详情{% endblock %}
+{% block content %}
+<style>
+.detail-card{background:white;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);overflow:hidden;max-width:700px;margin:0 auto}
+.detail-header{padding:24px 28px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between}
+.detail-header h2{font-size:20px;font-weight:800;margin:0;color:#111}
+.status-badge{padding:6px 18px;border-radius:20px;font-size:13px;font-weight:700}
+.status-badge.pending{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+.status-badge.approved{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+.status-badge.rejected{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+.detail-body{padding:28px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.info-item label{font-size:12px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px}
+.info-item p{font-size:15px;color:#111;margin:0;font-weight:500}
+.info-item.full{grid-column:1/-1}
+.timeline{border-left:2px solid #e5e7eb;padding-left:20px}
+.tl-item{position:relative;margin-bottom:20px}
+.tl-item:last-child{margin-bottom:0}
+.tl-dot{position:absolute;left:-25px;top:3px;width:10px;height:10px;border-radius:50%;background:#456bc4}
+.tl-dot.success{background:#10b981}
+.tl-dot.error{background:#ef4444}
+.tl-dot.pending{background:#f59e0b}
+.tl-title{font-size:14px;font-weight:700;color:#111;margin-bottom:2px}
+.tl-time{font-size:12px;color:#9ca3af}
+.tl-desc{font-size:13px;color:#6b7280;margin-top:4px}
+.reject-box{background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:16px 20px;margin-top:20px}
+.reject-box h4{font-size:14px;font-weight:700;color:#991b1b;margin:0 0 8px}
+.reject-box p{font-size:14px;color:#7f1d1d;margin:0}
+.approved-box{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;padding:16px 20px;margin-top:20px}
+.approved-box h4{font-size:14px;font-weight:700;color:#065f46;margin:0 0 8px}
+.btn-back{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f3f4f6;color:#374151;border-radius:20px;font-size:14px;font-weight:600;text-decoration:none;transition:all .2s}
+.btn-back:hover{background:#e5e7eb}
+</style>
+
+<div class="page-header">
+    <div class="page-title"><i class="fas fa-file-alt"></i> 申请详情</div>
+    <p class="page-subtitle">查看你的店铺申请进度和审核结果</p>
+</div>
+
+<div class="detail-card">
+    <div class="detail-header">
+        <h2>{{ app.shop_name }}</h2>
+        <div class="status-badge {{ app.status }}">
+            {% if app.status == 'pending' %}⏳ 待审核
+            {% elif app.status == 'approved' %}✅ 已通过
+            {% else %}❌ 已驳回{% endif %}
+        </div>
+    </div>
+    <div class="detail-body">
+        <div class="info-grid">
+            <div class="info-item"><label>菜系类型</label><p>{{ app.food_type }}</p></div>
+            <div class="info-item"><label>人均消费</label><p>¥{{ app.avg_price|floatformat:0 }}</p></div>
+            <div class="info-item"><label>所在区县</label><p>{{ app.county }}</p></div>
+            <div class="info-item"><label>所属商圈</label><p>{{ app.business_circle|default:"未填写" }}</p></div>
+            <div class="info-item full"><label>详细地址</label><p>{{ app.location }}</p></div>
+            <div class="info-item"><label>店铺电话</label><p>{{ app.phone|default:"未填写" }}</p></div>
+            <div class="info-item"><label>营业时间</label><p>{{ app.business_hours|default:"未填写" }}</p></div>
+            {% if app.description %}
+            <div class="info-item full"><label>店铺简介</label><p>{{ app.description }}</p></div>
+            {% endif %}
+        </div>
+
+        <h3 style="font-size:15px;font-weight:700;color:#111;margin:0 0 16px">审核进度</h3>
+        <div class="timeline">
+            <div class="tl-item">
+                <div class="tl-dot success"></div>
+                <div class="tl-title">已提交申请</div>
+                <div class="tl-time">{{ app.created_at|date:"Y年m月d日 H:i" }}</div>
+            </div>
+            {% if app.status == 'pending' %}
+            <div class="tl-item">
+                <div class="tl-dot pending"></div>
+                <div class="tl-title">等待管理员审核</div>
+                <div class="tl-desc">预计 1-3 个工作日内完成，请耐心等待</div>
+            </div>
+            {% elif app.status == 'approved' %}
+            <div class="tl-item">
+                <div class="tl-dot success"></div>
+                <div class="tl-title">审核通过</div>
+                <div class="tl-time">{{ app.reviewed_at|date:"Y年m月d日 H:i" }}</div>
+                <div class="tl-desc">店铺已成功上架，用户现在可以在系统中搜索到你的店铺</div>
+            </div>
+            {% else %}
+            <div class="tl-item">
+                <div class="tl-dot error"></div>
+                <div class="tl-title">审核未通过</div>
+                <div class="tl-time">{{ app.reviewed_at|date:"Y年m月d日 H:i" }}</div>
+                <div class="tl-desc">请查看驳回理由后，重新提交申请</div>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if app.status == 'rejected' and app.reject_reason %}
+        <div class="reject-box">
+            <h4><i class="fas fa-times-circle"></i> 驳回理由</h4>
+            <p>{{ app.reject_reason }}</p>
+        </div>
+        {% endif %}
+
+        {% if app.status == 'approved' and app.approved_shop %}
+        <div class="approved-box">
+            <h4><i class="fas fa-check-circle"></i> 店铺已上架</h4>
+            <p>店铺编号：{{ app.approved_shop.shop_id }}
+               <a href="/user/shop_detail/{{ app.approved_shop.shop_id }}/" style="color:#065f46;margin-left:12px;font-weight:700">查看店铺详情 →</a>
+            </p>
+        </div>
+        {% endif %}
+
+        <div style="margin-top:28px">
+            <a href="/user/merchant_dashboard/" class="btn-back"><i class="fas fa-arrow-left"></i> 返回控制台</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

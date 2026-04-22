@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}用户登录{% endblock %}
+{% block content %}
+    <h2>用户账号登录</h2>
+    {% if msg %}
+        <div class="msg msg-error">{{ msg }}</div>
+    {% endif %}
+    <form method="post" style="width: 420px;margin:0 auto;">
+        {% csrf_token %}
+        <p style="margin:20px 0;"><label style="width:80px;display:inline-block;">用户名：</label><input type="text" name="username" required style="width:100%;padding:9px;border:1px solid #ddd;border-radius:5px;font-size:14px;" placeholder="请输入您的登录用户名"></p>
+        <p style="margin:20px 0;"><label style="width:80px;display:inline-block;">密&nbsp;&nbsp;&nbsp;码：</label><input type="password" name="password" required style="width:100%;padding:9px;border:1px solid #ddd;border-radius:5px;font-size:14px;" placeholder="请输入您的登录密码"></p>
+        <button type="submit" class="btn" style="width:100%;">立即登录系统</button>
+        <p style="margin-top:25px;text-align:center;">还没有账号？<a href="/user/register/">点击免费注册</a></p>
+        <p style="margin-top:10px;text-align:center;">管理员入口：<a href="/admin/" target="_blank">Django后台管理</a></p>
+    </form>
+{% endblock %}

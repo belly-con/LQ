@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}商家资质审核详情{% endblock %}
+{% block content %}
+<style>
+.box{background:white;border-radius:14px;padding:22px;box-shadow:0 2px 12px rgba(0,0,0,.07);border:1px solid #f3f4f6;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px}
+.label{font-size:12px;color:#9ca3af;font-weight:700}
+.value{font-size:14px;color:#111;font-weight:500}
+.img-box img{max-width:100%;max-height:220px;border:1px solid #e5e7eb;border-radius:8px}
+.btn{padding:10px 18px;border:none;border-radius:20px;font-size:14px;font-weight:700;cursor:pointer}
+.btn-ok{background:linear-gradient(135deg,#10b981,#059669);color:white}
+.btn-no{background:linear-gradient(135deg,#ef4444,#dc2626);color:white}
+</style>
+
+<div class="page-header">
+  <div class="page-title"><i class="fas fa-id-badge"></i> 商家资质审核详情</div>
+  <p class="page-subtitle">请核验主体、地址、证照号及图片真实性。</p>
+</div>
+
+<div class="box">
+  <div class="grid">
+    <div><div class="label">账号</div><div class="value">{{ merchant.user.username }}</div></div>
+    <div><div class="label">商家名称</div><div class="value">{{ merchant.business_name }}</div></div>
+    <div><div class="label">法人姓名</div><div class="value">{{ merchant.legal_person_name }}</div></div>
+    <div><div class="label">联系电话</div><div class="value">{{ merchant.contact_phone }}</div></div>
+    <div><div class="label">身份证号</div><div class="value">{{ merchant.id_card_no }}</div></div>
+    <div><div class="label">营业执照号</div><div class="value">{{ merchant.business_license_no }}</div></div>
+    <div><div class="label">主体地址</div><div class="value">{{ merchant.business_address }}</div></div>
+    <div><div class="label">店铺地址</div><div class="value">{{ merchant.shop_address }}</div></div>
+    <div style="grid-column:1/-1;"><div class="label">经营范围</div><div class="value">{{ merchant.business_scope }}</div></div>
+  </div>
+</div>
+
+<div class="box">
+  <div style="font-weight:700;margin-bottom:12px;">资质图片</div>
+  <div class="grid">
+    <div class="img-box">
+      <div class="label">营业执照图片</div>
+      {% if merchant.license_image %}<img src="{{ merchant.license_image.url }}" alt="license">{% else %}<div class="value">未上传</div>{% endif %}
+    </div>
+    <div class="img-box">
+      <div class="label">身份证正面</div>
+      {% if merchant.id_card_front_image %}<img src="{{ merchant.id_card_front_image.url }}" alt="id_card">{% else %}<div class="value">未上传</div>{% endif %}
+    </div>
+    <div class="img-box" style="grid-column:1/-1;">
+      <div class="label">店铺门头/环境图</div>
+      {% if merchant.shop_image %}<img src="{{ merchant.shop_image.url }}" alt="shop">{% else %}<div class="value">未上传</div>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="box">
+  <div class="label" style="margin-bottom:8px;">审核备注（驳回时必填）</div>
+  <textarea id="reviewNote" style="width:100%;min-height:90px;border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;">{{ merchant.review_note }}</textarea>
+  <div style="margin-top:12px;display:flex;gap:10px;">
+    <button class="btn btn-ok" onclick="doReview('approve')">通过资质</button>
+    <button class="btn btn-no" onclick="doReview('reject')">驳回资质</button>
+    <a href="/user/admin_merchant_review/" style="margin-left:auto;color:#6b7280;">返回列表</a>
+  </div>
+  <div id="msg" style="margin-top:10px;font-size:13px;"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = '{{ csrf_token }}';
+async function doReview(action) {
+  const review_note = document.getElementById('reviewNote').value.trim();
+  const res = await fetch('/user/admin_merchant_review/{{ merchant.id }}/', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','X-CSRFToken':csrfToken},
+    body: JSON.stringify({action, review_note})
+  });
+  const data = await res.json();
+  const msg = document.getElementById('msg');
+  msg.style.color = data.success ? '#065f46' : '#991b1b';
+  msg.textContent = data.msg || '操作完成';
+  if (data.success) setTimeout(() => location.reload(), 1000);
+}
+</script>
+{% endblock %}
+

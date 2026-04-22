@@ -1,0 +1,336 @@
+<!-- templates/user/sentiment_results.html -->
+{% extends 'base.html' %}
+
+{% block title %}情感分析结果 - {{ task.task_name }}{% endblock %}
+
+{% block content %}
+<h2>📋 情感分析任务结果</h2>
+
+<div style="display: flex; gap: 20px; margin: 20px 0;">
+    <a href="/user/sentiment_dashboard/" class="btn" style="background: #95a5a6;">返回仪表盘</a>
+    <a href="/user/sentiment_statistics/" class="btn">查看完整统计</a>
+</div>
+
+<!-- 任务信息卡片 -->
+<div class="task-info" style="background: white; padding: 25px; border-radius: 10px; margin: 20px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <h3 style="margin-top: 0;">任务信息</h3>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+        <div>
+            <strong>任务ID:</strong>
+            <p>{{ task.task_id }}</p>
+        </div>
+        <div>
+            <strong>任务名称:</strong>
+            <p>{{ task.task_name }}</p>
+        </div>
+        <div>
+            <strong>任务类型:</strong>
+            <p>{{ task.get_task_type_display }}</p>
+        </div>
+        <div>
+            <strong>状态:</strong>
+            <p><span style="color: {{ task.get_status_display_color }};">{{ task.get_status_display }}</span></p>
+        </div>
+        <div>
+            <strong>创建时间:</strong>
+            <p>{{ task.created_at|date:"Y-m-d H:i:s" }}</p>
+        </div>
+        <div>
+            <strong>完成时间:</strong>
+            <p>{% if task.completed_at %}{{ task.completed_at|date:"Y-m-d H:i:s" }}{% else %}-{% endif %}</p>
+        </div>
+    </div>
+</div>
+
+<!-- 进度和结果 -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 30px 0;">
+    <!-- 进度信息 -->
+    <div class="progress-info" style="background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <h3 style="margin-top: 0;">📈 处理进度</h3>
+
+        <div style="margin: 20px 0;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span>处理进度</span>
+                <span>{{ task.progress|floatformat:1 }}%</span>
+            </div>
+            <div style="width: 100%; height: 20px; background: #eee; border-radius: 10px; overflow: hidden;">
+                <div style="width: {{ task.progress }}%; height: 100%; background: #1abc9c; transition: width 0.3s;"></div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div style="text-align: center;">
+                <div style="font-size: 24px; font-weight: bold; color: #2c3e50;">{{ task.total_comments }}</div>
+                <div style="color: #666; font-size: 14px;">总评论数</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 24px; font-weight: bold; color: #2c3e50;">{{ task.processed_comments }}</div>
+                <div style="color: #666; font-size: 14px;">已处理数</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 24px; font-weight: bold; color: #52c41a;">{{ task.success_count }}</div>
+                <div style="color: #666; font-size: 14px;">成功数</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 24px; font-weight: bold; color: #f5222d;">{{ task.failed_count }}</div>
+                <div style="color: #666; font-size: 14px;">失败数</div>
+            </div>
+        </div>
+
+        {% if task.processing_time %}
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+            <strong>性能统计:</strong>
+            <p>处理时间: {{ task.processing_time|floatformat:1 }} 秒</p>
+            <p>处理速度: {{ task.comments_per_second|floatformat:1 }} 条/秒</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 结果摘要 -->
+    <div class="result-summary" style="background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <h3 style="margin-top: 0;">📊 结果摘要</h3>
+
+        {% if result %}
+        <div style="margin: 20px 0;">
+            <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                <div style="font-size: 48px; color: #52c41a; margin-right: 15px;">✅</div>
+                <div>
+                    <div style="font-size: 28px; font-weight: bold;">{{ result.success_rate|floatformat:1 }}%</div>
+                    <div style="color: #666;">分析成功率</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: center;">
+                <div>
+                    <div style="font-size: 20px; font-weight: bold; color: #52c41a;">{{ result.success }}</div>
+                    <div style="color: #666; font-size: 14px;">成功分析</div>
+                </div>
+                <div>
+                    <div style="font-size: 20px; font-weight: bold; color: #f5222d;">{{ result.failed }}</div>
+                    <div style="color: #666; font-size: 14px;">分析失败</div>
+                </div>
+            </div>
+        </div>
+        {% elif task.result_summary %}
+        <div style="margin: 20px 0;">
+            <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                <div style="font-size: 48px; color: #52c41a; margin-right: 15px;">✅</div>
+                <div>
+                    <div style="font-size: 28px; font-weight: bold;">{{ task.result_summary.success_rate|floatformat:1 }}%</div>
+                    <div style="color: #666;">分析成功率</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: center;">
+                <div>
+                    <div style="font-size: 20px; font-weight: bold; color: #52c41a;">{{ task.result_summary.success }}</div>
+                    <div style="color: #666; font-size: 14px;">成功分析</div>
+                </div>
+                <div>
+                    <div style="font-size: 20px; font-weight: bold; color: #f5222d;">{{ task.result_summary.failed }}</div>
+                    <div style="color: #666; font-size: 14px;">分析失败</div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 40px 0; color: #999;">
+            <p>等待结果生成...</p>
+        </div>
+        {% endif %}
+
+        {% if task.error_message %}
+        <div style="margin-top: 20px; padding: 15px; background: #f8d7da; border-radius: 5px; color: #721c24;">
+            <strong>错误信息:</strong>
+            <p>{{ task.error_message }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 情感分布 -->
+<div class="sentiment-distribution" style="background: white; padding: 25px; border-radius: 10px; margin: 30px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <h3>📊 情感分布</h3>
+
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px;">
+        <!-- 分布表格 -->
+        <div>
+            <h4 style="color: #2c3e50; margin-bottom: 15px;">分布统计</h4>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f8f9fa;">
+                        <th style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">情感分类</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">数量</th>
+                        <th style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">平均分</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in sentiment_distribution %}
+                    <tr>
+                        <td style="padding: 12px; border-bottom: 1px solid #eee;">
+                            {% if stat.sentiment == '正面' %}
+                            <span style="color: #52c41a;">👍 {{ stat.sentiment }}</span>
+                            {% elif stat.sentiment == '负面' %}
+                            <span style="color: #f5222d;">👎 {{ stat.sentiment }}</span>
+                            {% else %}
+                            <span style="color: #faad14;">😐 {{ stat.sentiment }}</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 12px; border-bottom: 1px solid #eee;">{{ stat.count }}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #eee;">{{ stat.avg_score|floatformat:3 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" style="padding: 20px; text-align: center; color: #999;">
+                            暂无情感分布数据
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 分布图表 -->
+        <div>
+            <h4 style="color: #2c3e50; margin-bottom: 15px;">分布图表</h4>
+            <div id="distributionChart" style="width: 100%; height: 300px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 最新分析结果 -->
+<div class="recent-results" style="background: white; padding: 25px; border-radius: 10px; margin: 30px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <h3>📝 最新分析结果</h3>
+
+    <div style="max-height: 400px; overflow-y: auto; margin-top: 20px;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa; position: sticky; top: 0;">
+                    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">店铺</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">评论内容</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">情感</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">评分</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for comment in recent_analyzed %}
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee; vertical-align: top;">
+                        {{ comment.shop_id.shop_name|truncatechars:20 }}
+                    </td>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee; vertical-align: top;">
+                        {{ comment.content|truncatechars:80 }}
+                        {% if comment.content|length > 80 %}...{% endif %}
+                    </td>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee; vertical-align: top;">
+                        {% if comment.sentiment == '正面' %}
+                        <span style="color: #52c41a; font-weight: bold;">👍 {{ comment.sentiment }}</span>
+                        {% elif comment.sentiment == '负面' %}
+                        <span style="color: #f5222d; font-weight: bold;">👎 {{ comment.sentiment }}</span>
+                        {% else %}
+                        <span style="color: #faad14;">😐 {{ comment.sentiment }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 12px; border-bottom: 1px solid #eee; vertical-align: top;">
+                        {{ comment.sentiment_score|floatformat:3 }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="padding: 40px; text-align: center; color: #999;">
+                        暂无分析结果
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- ECharts -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+<script>
+// 初始化分布图表
+document.addEventListener('DOMContentLoaded', function() {
+    initDistributionChart();
+});
+
+function initDistributionChart() {
+    const chartDom = document.getElementById('distributionChart');
+    const myChart = echarts.init(chartDom);
+
+    // 从页面数据获取情感分布
+    const data = [];
+    {% for stat in sentiment_distribution %}
+    data.push({
+        name: '{{ stat.sentiment }}',
+        value: {{ stat.count }},
+        score: {{ stat.avg_score|floatformat:3 }}
+    });
+    {% endfor %}
+
+    const option = {
+        tooltip: {
+            trigger: 'item',
+            formatter: function(params) {
+                return `${params.name}<br/>
+                        数量: ${params.value}<br/>
+                        平均分: ${params.data.score}`;
+            }
+        },
+        legend: {
+            orient: 'vertical',
+            left: 'left'
+        },
+        series: [
+            {
+                name: '情感分布',
+                type: 'pie',
+                radius: ['40%', '70%'],
+                avoidLabelOverlap: false,
+                itemStyle: {
+                    borderRadius: 10,
+                    borderColor: '#fff',
+                    borderWidth: 2
+                },
+                label: {
+                    show: false,
+                    position: 'center'
+                },
+                emphasis: {
+                    label: {
+                        show: true,
+                        fontSize: '16',
+                        fontWeight: 'bold'
+                    }
+                },
+                labelLine: {
+                    show: false
+                },
+                data: data.map(item => {
+                    let color = '#faad14'; // 中性
+                    if (item.name === '正面') color = '#52c41a';
+                    if (item.name === '负面') color = '#f5222d';
+
+                    return {
+                        ...item,
+                        itemStyle: { color: color }
+                    };
+                })
+            }
+        ]
+    };
+
+    myChart.setOption(option);
+
+    // 响应窗口大小变化
+    window.addEventListener('resize', function() {
+        myChart.resize();
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,249 @@
+<!-- templates/user/shop_map_standalone.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>店铺位置地图</title>
+    <!-- 简化样式，只保留地图 -->
+    <style>
+        * {margin:0;padding:0;box-sizing:border-box;font-family:"Microsoft YaHei", sans-serif;}
+        body {background:#f5f7fa;cursor:default !important;}
+
+        .container {padding:10px;max-width:100%;}
+
+        .filter-box {background:white;padding:15px;border-radius:5px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,0.1);}
+        .filter-form {display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+        .filter-group {display:flex;align-items:center;gap:5px;}
+        .filter-group label {font-size:14px;color:#555;}
+        .filter-group select {padding:6px 10px;border:1px solid #ddd;border-radius:3px;min-width:120px;}
+        .btn {padding:6px 15px;border:none;border-radius:3px;background:#1abc9c;color:white;cursor:pointer;font-size:14px;}
+        .btn:hover {background:#16a085;}
+
+        #map {width:100%;height:650px;border:1px solid #ddd;border-radius:5px;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="margin-bottom:10px;">
+            <h2 style="color:#2c3e50;font-size:20px;">店铺位置地图</h2>
+            <p style="color:#666;font-size:14px;">筛选条件查看店铺分布</p>
+        </div>
+
+        <!-- 筛选区域 -->
+        <div class="filter-box">
+            <form method="get" class="filter-form" id="filterForm">
+                <div class="filter-group">
+                    <label>区县：</label>
+                    <select name="county" id="county">
+                        <option value="">全部区县</option>
+                        {% for county in counties %}
+                        <option value="{{ county }}" {% if county_filter == county %}selected{% endif %}>
+                            {{ county }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>商圈：</label>
+                    <select name="business_circle" id="business_circle">
+                        <option value="">全部商圈</option>
+                        {% for circle in business_circles %}
+                        <option value="{{ circle }}" {% if business_circle_filter == circle %}selected{% endif %}>
+                            {{ circle }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <button type="submit" class="btn">筛选</button>
+                    <a href="/user/shop_map_standalone/" class="btn" style="background:#95a5a6;">重置</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- 统计信息 -->
+        <div style="background:#e9f7ef;padding:8px 15px;border-radius:5px;margin-bottom:10px;font-size:14px;">
+            共找到 <strong style="color:#1abc9c;">{{ shops_count }}</strong> 家店铺
+            {% if county_filter %} | 区县：<strong>{{ county_filter }}</strong>{% endif %}
+            {% if business_circle_filter %} | 商圈：<strong>{{ business_circle_filter }}</strong>{% endif %}
+        </div>
+
+        <!-- 地图容器 -->
+        <div id="map"></div>
+
+        <!-- 操作按钮 -->
+        <div style="margin-top:15px;text-align:center;">
+            <button onclick="showAllShops()" class="btn">显示所有店铺</button>
+            <button onclick="centerToBeijing()" class="btn">回到北京中心</button>
+            <button onclick="window.parent.location.href='/user/index/'" class="btn" style="background:#95a5a6;">返回主界面</button>
+        </div>
+    </div>
+
+    <!-- 百度地图API -->
+    <script src="https://api.map.baidu.com/api?v=3.0&ak={{ baidu_map_ak }}"></script>
+
+    <script type="text/javascript">
+        // 店铺数据
+        var shopsData = {{ shops_json|safe }};
+        var map = null;
+        var markers = [];
+        var cluster = null;
+
+        // 初始化地图
+        function initMap() {
+            try {
+                // 创建地图实例
+                map = new BMap.Map("map");
+
+                // 计算中心点
+                var centerPoint = getCenterPoint();
+                map.centerAndZoom(centerPoint, 12);
+                map.enableScrollWheelZoom(true);
+                map.addControl(new BMap.NavigationControl());
+                map.addControl(new BMap.ScaleControl());
+
+                // 添加标记点
+                addMarkers();
+
+                // 如果有数据，调整视野
+                if (markers.length > 0) {
+                    setTimeout(adjustMapView, 300);
+                }
+
+            } catch (error) {
+                console.error('地图初始化错误:', error);
+                alert('地图加载失败，请刷新页面重试');
+            }
+        }
+
+        // 计算中心点
+        function getCenterPoint() {
+            var validShops = shopsData.filter(shop =>
+                shop.lng && shop.lat &&
+                !isNaN(shop.lng) && !isNaN(shop.lat) &&
+                shop.lng > 116.2 && shop.lng < 116.7 &&
+                shop.lat > 39.8 && shop.lat < 40.1
+            );
+
+            if (validShops.length === 0) {
+                return new BMap.Point(116.404, 39.915);
+            }
+
+            var totalLng = 0, totalLat = 0;
+            validShops.forEach(shop => {
+                totalLng += parseFloat(shop.lng);
+                totalLat += parseFloat(shop.lat);
+            });
+
+            return new BMap.Point(
+                totalLng / validShops.length,
+                totalLat / validShops.length
+            );
+        }
+
+        // 添加标记点（使用简单方式）
+        function addMarkers() {
+            // 清除现有标记
+            markers.forEach(marker => map.removeOverlay(marker));
+            markers = [];
+
+            // 只显示最多500个标记，避免性能问题
+            var displayShops = shopsData;
+            if (shopsData.length > 500) {
+                displayShops = shopsData.slice(0, 500);
+                console.warn('店铺数量过多，只显示前500个');
+            }
+
+            displayShops.forEach(function(shop) {
+                if (!shop.lng || !shop.lat || isNaN(shop.lng) || isNaN(shop.lat)) {
+                    return;
+                }
+
+                var point = new BMap.Point(shop.lng, shop.lat);
+                var marker = new BMap.Marker(point);
+                map.addOverlay(marker);
+                markers.push(marker);
+
+                // 创建信息窗口
+                var infoWindow = createInfoWindow(shop);
+
+                // 点击标记
+                marker.addEventListener("click", function() {
+                    this.openInfoWindow(infoWindow);
+                    map.panTo(point);
+                });
+            });
+        }
+
+        // 创建信息窗口
+        function createInfoWindow(shop) {
+            var html = `
+                <div style="padding:10px;max-width:280px;">
+                    <h4 style="margin:0 0 8px 0;color:#2c3e50;font-size:15px;">${shop.shop_name}</h4>
+                    <p style="margin:3px 0;font-size:13px;"><strong>评分：</strong><span style="color:#e74c3c;">${shop.score ? shop.score.toFixed(1) : 'N/A'}</span></p>
+                    <p style="margin:3px 0;font-size:13px;"><strong>人均：</strong>¥${shop.avg_price || 0}</p>
+                    <p style="margin:3px 0;font-size:13px;"><strong>菜系：</strong>${shop.food_type || 'N/A'}</p>
+                    <p style="margin:3px 0;font-size:13px;"><strong>区县：</strong>${shop.county || 'N/A'}</p>
+                    <p style="margin:3px 0;font-size:13px;"><strong>商圈：</strong>${shop.business_circle || 'N/A'}</p>
+                    <p style="margin:3px 0;font-size:13px;"><strong>地址：</strong>${shop.location || 'N/A'}</p>
+                </div>
+            `;
+
+            return new BMap.InfoWindow(html, {
+                width: 300,
+                height: 220
+            });
+        }
+
+        // 调整地图视野
+        function adjustMapView() {
+            if (markers.length === 0) return;
+
+            try {
+                var points = [];
+                markers.forEach(marker => {
+                    points.push(marker.getPosition());
+                });
+
+                if (points.length > 0) {
+                    var viewport = map.getViewport(points);
+                    map.centerAndZoom(viewport.center, viewport.zoom);
+                }
+            } catch (e) {
+                console.log('调整视野时出错:', e);
+            }
+        }
+
+        // 显示所有店铺
+        function showAllShops() {
+            adjustMapView();
+        }
+
+        // 回到北京中心
+        function centerToBeijing() {
+            map.centerAndZoom(new BMap.Point(116.404, 39.915), 12);
+        }
+
+        // 页面加载
+        window.onload = function() {
+            if (typeof BMap !== 'undefined') {
+                initMap();
+            } else {
+                var checkCount = 0;
+                var checkInterval = setInterval(function() {
+                    checkCount++;
+                    if (typeof BMap !== 'undefined') {
+                        clearInterval(checkInterval);
+                        initMap();
+                    } else if (checkCount > 30) {
+                        clearInterval(checkInterval);
+                        alert('百度地图API加载失败，请检查网络连接');
+                    }
+                }, 100);
+            }
+        };
+    </script>
+</body>
+</html>

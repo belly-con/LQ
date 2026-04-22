@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}店铺审核管理{% endblock %}
+{% block content %}
+<style>
+.tab-bar{display:flex;gap:8px;margin-bottom:24px;background:white;padding:6px;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.07);width:fit-content}
+.tab-btn{padding:8px 20px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;text-decoration:none;color:#6b7280}
+.tab-btn.active{background:linear-gradient(135deg,#456bc4,#8e5de0);color:white;box-shadow:0 4px 12px rgba(69,107,196,.25)}
+.tab-btn:hover:not(.active){background:#f3f4f6;color:#374151}
+.cnt-badge{display:inline-block;background:rgba(255,255,255,.3);border-radius:10px;padding:1px 7px;font-size:11px;margin-left:6px}
+.tab-btn:not(.active) .cnt-badge{background:#f3f4f6;color:#6b7280}
+.review-card{background:white;border-radius:14px;padding:22px 24px;box-shadow:0 2px 12px rgba(0,0,0,.07);border:1px solid #f3f4f6;margin-bottom:16px;display:flex;align-items:flex-start;gap:20px}
+.review-card-main{flex:1}
+.review-card-main h3{font-size:16px;font-weight:700;color:#111;margin:0 0 8px}
+.app-meta{font-size:13px;color:#6b7280;display:flex;gap:14px;flex-wrap:wrap}
+.app-meta span{display:flex;align-items:center;gap:4px}
+.merchant-info{background:#f8fafc;border-radius:8px;padding:8px 12px;margin-top:10px;font-size:13px;color:#374151;display:flex;gap:20px}
+.status-badge{padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap}
+.status-badge.pending{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+.status-badge.approved{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+.status-badge.rejected{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+.btn-review{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:linear-gradient(135deg,#456bc4,#8e5de0);color:white;border-radius:20px;font-size:13px;font-weight:700;text-decoration:none;transition:all .2s}
+.btn-review:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(69,107,196,.3)}
+.empty-state{text-align:center;padding:60px 20px;color:#9ca3af}
+</style>
+
+<div class="page-header">
+    <div class="page-title"><i class="fas fa-clipboard-check"></i> 店铺申请审核</div>
+    <p class="page-subtitle">管理商家提交的店铺上架申请。审核通过后店铺将自动录入系统。</p>
+</div>
+
+<div class="tab-bar">
+    <a href="?status=pending" class="tab-btn {% if status_filter == 'pending' %}active{% endif %}">
+        ⏳ 待审核 <span class="cnt-badge">{{ counts.pending }}</span>
+    </a>
+    <a href="?status=approved" class="tab-btn {% if status_filter == 'approved' %}active{% endif %}">
+        ✅ 已通过 <span class="cnt-badge">{{ counts.approved }}</span>
+    </a>
+    <a href="?status=rejected" class="tab-btn {% if status_filter == 'rejected' %}active{% endif %}">
+        ❌ 已驳回 <span class="cnt-badge">{{ counts.rejected }}</span>
+    </a>
+</div>
+
+{% if apps %}
+{% for app in apps %}
+<div class="review-card">
+    <div class="review-card-main">
+        <h3>{{ app.shop_name }}
+            <span style="font-size:13px;font-weight:400;color:#6b7280;margin-left:10px">{{ app.food_type }}</span>
+        </h3>
+        <div class="app-meta">
+            <span><i class="fas fa-map-marker-alt"></i>{{ app.county }}{% if app.business_circle %} · {{ app.business_circle }}{% endif %}</span>
+            <span><i class="fas fa-map"></i>{{ app.location }}</span>
+            <span><i class="fas fa-yen-sign"></i>人均 ¥{{ app.avg_price|floatformat:0 }}</span>
+            <span><i class="fas fa-clock"></i>{{ app.created_at|date:"m-d H:i" }}</span>
+        </div>
+        <div class="merchant-info">
+            <span><i class="fas fa-user"></i> 商家：{{ app.merchant.username }}</span>
+            <span><i class="fas fa-building"></i> {{ app.merchant.merchant_profile.business_name }}</span>
+            <span><i class="fas fa-phone"></i> {{ app.merchant.merchant_profile.contact_phone }}</span>
+        </div>
+    </div>
+    <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:10px">
+        <div class="status-badge {{ app.status }}">
+            {% if app.status == 'pending' %}⏳ 待审核
+            {% elif app.status == 'approved' %}✅ 已通过
+            {% else %}❌ 已驳回{% endif %}
+        </div>
+        <a href="/user/admin_review/{{ app.id }}/" class="btn-review"><i class="fas fa-eye"></i> 查看详情</a>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="empty-state">
+    <div style="font-size:56px;margin-bottom:16px">📋</div>
+    <p style="font-size:16px;font-weight:600">暂无{% if status_filter == 'pending' %}待审核{% elif status_filter == 'approved' %}已通过{% else %}已驳回{% endif %}申请</p>
+</div>
+{% endif %}
+{% endblock %}

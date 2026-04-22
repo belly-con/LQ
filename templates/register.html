@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}用户注册{% endblock %}
+{% block content %}
+    <h2>用户账号注册</h2>
+    {% if msg %}
+        <div class="msg msg-error">{{ msg }}</div>
+    {% endif %}
+    <form method="post" style="width: 420px;margin:0 auto;">
+        {% csrf_token %}
+        <p style="margin:18px 0;"><label style="width:80px;display:inline-block;">用户名：</label><input type="text" name="username" required style="width:100%;padding:9px;border:1px solid #ddd;border-radius:5px;font-size:14px;" placeholder="用户名唯一，不可重复"></p>
+        <p style="margin:18px 0;"><label style="width:80px;display:inline-block;">密&nbsp;&nbsp;&nbsp;码：</label><input type="password" name="password1" required style="width:100%;padding:9px;border:1px solid #ddd;border-radius:5px;font-size:14px;" placeholder="密码至少6位"></p>
+        <p style="margin:18px 0;"><label style="width:80px;display:inline-block;">确认密码：</label><input type="password" name="password2" required style="width:100%;padding:9px;border:1px solid #ddd;border-radius:5px;font-size:14px;" placeholder="再次输入密码"></p>
+        <p style="margin:18px 0;"><label style="width:80px;display:inline-block;">邮&nbsp;&nbsp;&nbsp;箱：</label><input type="email" name="email" style="width:100%;padding:9px;border:1px solid #ddd;border-radius:5px;font-size:14px;" placeholder="选填，用于找回密码"></p>
+        <button type="submit" class="btn" style="width:100%;">完成注册</button>
+        <p style="margin-top:25px;text-align:center;">已有账号？<a href="/user/login/">点击立即登录</a></p>
+    </form>
+{% endblock %}

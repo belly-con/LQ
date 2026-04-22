@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}受欢迎Top10店铺{% endblock %}
+{% block content %}
+    <h2>🏆 受欢迎Top10店铺</h2>
+    <p style="color:#666;margin:15px 0;">根据评论数和评分综合排序，为您推荐最受欢迎的店铺</p>
+    
+    <div style="margin-top: 20px;">
+        <table style="width:100%;border-collapse:collapse;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+            <thead>
+                <tr style="background:#2c3e50;color:#fff;">
+                    <th style="padding:12px;text-align:center;width:60px;">排名</th>
+                    <th style="padding:12px;text-align:left;">店铺名称</th>
+                    <th style="padding:12px;text-align:center;width:100px;">综合评分</th>
+                    <th style="padding:12px;text-align:center;width:100px;">评论数量</th>
+                    <th style="padding:12px;text-align:center;width:100px;">人均消费</th>
+                    <th style="padding:12px;text-align:center;width:100px;">区县</th>
+                    <th style="padding:12px;text-align:center;width:100px;">菜系</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for shop in shops %}
+                <tr style="border-bottom:1px solid #eee;">
+                    <td style="padding:12px;text-align:center;font-weight:bold;color:#1abc9c;">
+                        {% if forloop.counter == 1 %}🥇
+                        {% elif forloop.counter == 2 %}🥈
+                        {% elif forloop.counter == 3 %}🥉
+                        {% else %}{{ forloop.counter }}
+                        {% endif %}
+                    </td>
+                    <td style="padding:12px;">
+                        <strong style="color:#2c3e50;">{{ shop.shop_name }}</strong>
+                        {% if shop.michelin %}<span style="color:#d4af37;margin-left:5px;">⭐</span>{% endif %}
+                    </td>
+                    <td style="padding:12px;text-align:center;">
+                        <span style="color:#e74c3c;font-weight:bold;">{{ shop.shop_score }}</span>
+                    </td>
+                    <td style="padding:12px;text-align:center;">{{ shop.comment_count|default:0 }}</td>
+                    <td style="padding:12px;text-align:center;">{{ shop.avg_price|default:"-" }}元</td>
+                    <td style="padding:12px;text-align:center;">{{ shop.county|default:"-" }}</td>
+                    <td style="padding:12px;text-align:center;">{{ shop.food_type|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="padding:20px;text-align:center;color:#999;">暂无数据</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

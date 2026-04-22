@@ -1,0 +1,480 @@
+{% extends 'base.html' %}
+{% block title %}京城味蕾管家 · AI 助手{% endblock %}
+
+{% block content %}
+<style>
+/* ===== 整体布局 ===== */
+.ai-page{display:flex;flex-direction:column;height:calc(100vh - 68px - 64px);min-height:600px}
+
+/* ===== 头部 ===== */
+.ai-header{background:linear-gradient(135deg,#456bc4 0%,#8e5de0 100%);border-radius:var(--border-radius-lg) var(--border-radius-lg) 0 0;padding:20px 24px;color:white;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ai-header-left{display:flex;align-items:center;gap:14px}
+.ai-avatar{width:48px;height:48px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;border:2px solid rgba(255,255,255,.4);flex-shrink:0}
+.ai-header-info h2{font-size:18px;font-weight:800;margin:0 0 3px}
+.ai-header-info p{font-size:12px;opacity:.85;margin:0}
+.ai-status-dot{width:7px;height:7px;background:#4ade80;border-radius:50%;display:inline-block;margin-right:5px;animation:pulse-g 2s infinite}
+@keyframes pulse-g{0%,100%{opacity:1}50%{opacity:.35}}
+.btn-glass{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:white;padding:7px 14px;border-radius:18px;font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);display:flex;align-items:center;gap:5px;text-decoration:none}
+.btn-glass:hover{background:rgba(255,255,255,.28)}
+.header-actions{display:flex;gap:8px}
+
+/* ===== 场景卡片条 ===== */
+.scene-bar{background:white;border-left:1px solid rgba(203,213,225,.4);border-right:1px solid rgba(203,213,225,.4);padding:10px 18px;display:flex;gap:8px;overflow-x:auto;flex-shrink:0;scrollbar-width:none}
+.scene-bar::-webkit-scrollbar{display:none}
+.scene-chip{white-space:nowrap;padding:7px 14px;border-radius:18px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;border:1.5px solid transparent;flex-shrink:0;display:flex;align-items:center;gap:5px}
+.scene-chip:hover{transform:translateY(-2px)}
+.scene-chip.blue{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
+.scene-chip.purple{background:#f5f3ff;color:#6d28d9;border-color:#ddd6fe}
+.scene-chip.orange{background:#fff7ed;color:#c2410c;border-color:#fed7aa}
+.scene-chip.green{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}
+.scene-chip.pink{background:#fdf2f8;color:#9d174d;border-color:#fbcfe8}
+.scene-chip.cyan{background:#ecfeff;color:#0e7490;border-color:#a5f3fc}
+.scene-chip.yellow{background:#fffbeb;color:#92400e;border-color:#fde68a}
+.scene-chip.pref-set{background:rgba(69,107,196,.08);border-style:dashed;border-color:rgba(69,107,196,.4);color:#456bc4}
+
+/* ===== 对话区 ===== */
+.chat-body{flex:1;overflow-y:auto;padding:20px 24px;background:#f8fafc;border-left:1px solid rgba(203,213,225,.4);border-right:1px solid rgba(203,213,225,.4);scroll-behavior:smooth}
+.chat-body::-webkit-scrollbar{width:4px}
+.chat-body::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
+
+/* 欢迎区 */
+.welcome-area{text-align:center;padding:24px 16px 20px}
+.welcome-area h3{font-size:17px;font-weight:700;color:var(--dark-color);margin-bottom:6px}
+.welcome-area p{color:var(--gray-dark);font-size:13px;margin-bottom:18px}
+.suggestion-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;text-align:left}
+.suggestion-card{background:white;border:1.5px solid rgba(203,213,225,.5);border-radius:12px;padding:12px 14px;cursor:pointer;transition:all .2s;font-size:13px;color:var(--dark-color);line-height:1.5}
+.suggestion-card:hover{border-color:var(--primary-color);background:var(--primary-lighter);color:var(--primary-color);transform:translateY(-2px)}
+.suggestion-card-icon{font-size:18px;margin-bottom:5px;display:block}
+
+/* 消息气泡 */
+.message-row{display:flex;margin-bottom:16px;animation:fadeInUp .22s ease;gap:10px;align-items:flex-end}
+.message-row.user{flex-direction:row-reverse}
+.msg-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.msg-avatar.ai-av{background:linear-gradient(135deg,#456bc4,#8e5de0);color:white}
+.msg-avatar.user-av{background:linear-gradient(135deg,#0ea5e9,#456bc4);color:white}
+.bubble{max-width:72%;padding:12px 16px;border-radius:16px;font-size:14px;line-height:1.7;word-break:break-word}
+.bubble.ai{background:white;color:var(--dark-color);border-radius:4px 16px 16px 16px;box-shadow:var(--shadow-sm);border:1px solid rgba(203,213,225,.4)}
+.bubble.user{background:linear-gradient(135deg,#456bc4,#8e5de0);color:white;border-radius:16px 4px 16px 16px}
+.bubble.ai strong{color:#1d4ed8}
+.bubble.ai ul,.bubble.ai ol{padding-left:18px;margin:6px 0}
+.bubble.ai li{margin-bottom:3px}
+.bubble.ai p{margin:5px 0}
+.bubble.ai h1,.bubble.ai h2,.bubble.ai h3{font-size:14px;font-weight:700;margin:8px 0 4px;color:#1d4ed8}
+.bubble.ai code{background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:12px}
+.bubble.ai hr{border:none;border-top:1px solid #e2e8f0;margin:8px 0}
+.msg-time{font-size:11px;color:var(--gray-dark);margin-top:3px;opacity:.55;padding:0 3px}
+.message-row.user .msg-time{text-align:right}
+
+/* 打字动画 */
+.typing-indicator{display:flex;align-items:center;gap:10px;margin-bottom:16px;animation:fadeInUp .2s ease}
+.typing-dots{background:white;border:1px solid rgba(203,213,225,.4);border-radius:4px 16px 16px 16px;padding:12px 16px;box-shadow:var(--shadow-sm);display:flex;gap:4px;align-items:center}
+.typing-dot{width:7px;height:7px;background:var(--primary-color);border-radius:50%;animation:bounce 1.2s infinite}
+.typing-dot:nth-child(2){animation-delay:.2s}
+.typing-dot:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-5px);opacity:1}}
+
+/* ===== 输入区 ===== */
+.chat-input-area{background:white;border:1px solid rgba(203,213,225,.5);border-top:none;border-radius:0 0 var(--border-radius-lg) var(--border-radius-lg);padding:14px 18px;flex-shrink:0}
+.input-row{display:flex;gap:8px;align-items:flex-end}
+.chat-input{flex:1;border:1.5px solid rgba(203,213,225,.6);border-radius:22px;padding:11px 18px;font-size:14px;font-family:inherit;resize:none;outline:none;max-height:100px;min-height:44px;overflow-y:auto;transition:all .2s;color:var(--dark-color);background:#f8fafc;line-height:1.5}
+.chat-input:focus{border-color:var(--primary-color);background:white;box-shadow:0 0 0 3px rgba(69,107,196,.1)}
+.chat-input::placeholder{color:#94a3b8}
+.send-btn{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#456bc4,#8e5de0);border:none;color:white;font-size:16px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 3px 10px rgba(69,107,196,.3)}
+.send-btn:hover{transform:scale(1.08)}
+.send-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.input-hint{font-size:11px;color:#94a3b8;margin-top:6px;text-align:center}
+
+/* 错误 */
+.error-bubble{background:#fff1f2;border:1px solid #fecdd3;color:#9f1239;border-radius:8px;padding:8px 14px;font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:7px;animation:fadeInUp .2s ease}
+
+/* ===== 偏好设置侧抽屉 ===== */
+.pref-drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:10000;display:none;align-items:flex-end;justify-content:center}
+.pref-drawer-overlay.open{display:flex}
+.pref-drawer{background:white;border-radius:20px 20px 0 0;width:100%;max-width:620px;max-height:85vh;overflow-y:auto;padding:24px;animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.pref-drawer h3{font-size:17px;font-weight:800;color:#111;margin:0 0 4px;display:flex;align-items:center;gap:8px}
+.pref-drawer .scene-desc{font-size:13px;color:#6b7280;margin:0 0 20px;padding-bottom:16px;border-bottom:1px solid #f3f4f6}
+.pref-section{margin-bottom:20px}
+.pref-section-label{font-size:12px;font-weight:700;color:#456bc4;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.tag-flex{display:flex;flex-wrap:wrap;gap:8px}
+.pref-tag{position:relative}
+.pref-tag input{position:absolute;opacity:0;width:0;height:0}
+.pref-tag label{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:16px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;border:1.5px solid #e5e7eb;background:#f9fafb;color:#374151}
+.pref-tag input:checked+label{background:linear-gradient(135deg,rgba(69,107,196,.12),rgba(142,93,224,.12));border-color:#456bc4;color:#456bc4}
+.pref-tag label:hover{border-color:#456bc4;color:#456bc4;transform:translateY(-1px)}
+.pref-select{width:100%;padding:9px 13px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:inherit;outline:none;background:#f9fafb;transition:all .2s}
+.pref-select:focus{border-color:#456bc4;background:white}
+.pref-input{width:100%;padding:9px 13px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:inherit;outline:none;background:#f9fafb;transition:all .2s;box-sizing:border-box}
+.pref-input:focus{border-color:#456bc4;background:white}
+.toggle-row{display:flex;gap:12px;flex-wrap:wrap}
+.toggle-item{display:flex;align-items:center;gap:8px;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:10px;background:#f9fafb;cursor:pointer;transition:all .2s;font-size:13px;font-weight:600;color:#374151}
+.toggle-item input{width:16px;height:16px;accent-color:#456bc4}
+.toggle-item:hover{border-color:#456bc4;color:#456bc4}
+.drawer-footer{display:flex;gap:10px;padding-top:16px;border-top:1px solid #f3f4f6;margin-top:8px}
+.btn-save-pref{flex:1;padding:12px;background:linear-gradient(135deg,#456bc4,#8e5de0);color:white;border:none;border-radius:22px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-save-pref:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(69,107,196,.35)}
+.btn-cancel-pref{padding:12px 20px;background:#f3f4f6;color:#374151;border:none;border-radius:22px;font-size:14px;font-weight:600;cursor:pointer}
+.btn-cancel-pref:hover{background:#e5e7eb}
+
+@media(max-width:768px){.ai-page{height:auto;min-height:unset}.chat-body{min-height:320px;padding:14px}.bubble{max-width:88%}.ai-header{padding:16px}.pref-drawer{max-height:90vh}}
+</style>
+
+<div class="ai-page">
+    <!-- 头部 -->
+    <div class="ai-header">
+        <div class="ai-header-left">
+            <div class="ai-avatar">🍜</div>
+            <div class="ai-header-info">
+                <h2>京城味蕾管家</h2>
+                <p><span class="ai-status-dot"></span>DeepSeek 驱动 · 基于真实数据库智能应答</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn-glass" onclick="clearHistory()" title="清空对话">
+                <i class="fas fa-trash-alt"></i> 清空
+            </button>
+        </div>
+    </div>
+
+    <!-- 场景快捷卡片（每个都带偏好弹窗） -->
+    <div class="scene-bar">
+        <div class="scene-chip blue" onclick="openPref('business','🤝 商务宴请','适合商务宴请的场景：环境优先，有包间，人均较高')">🤝 商务宴请</div>
+        <div class="scene-chip purple" onclick="openPref('night','🌙 深夜食堂','深夜觅食场景：夜宵、宵夜、营业时间晚')">🌙 深夜食堂</div>
+        <div class="scene-chip orange" onclick="openPref('family','👶 遛娃首选','亲子出行场景：儿童友好、有儿童座椅、停车方便')">👶 遛娃首选</div>
+        <div class="scene-chip green" onclick="openPref('budget','💰 平价午餐','经济实惠的工作日午餐：人均50元以内')">💰 平价午餐</div>
+        <div class="scene-chip pink" onclick="openPref('citywalk','🚶 CityWalk','景点周边美食路线规划，边走边吃')">🚶 CityWalk</div>
+        <div class="scene-chip cyan" onclick="openPref('rainy','🌧️ 雨天打卡','雨天适合的餐厅：火锅、室内环境好')">🌧️ 雨天打卡</div>
+        <div class="scene-chip yellow" onclick="openPref('tradition','🏮 老北京味','北京传统小吃、老字号、地道京味')">🏮 老北京味</div>
+    </div>
+
+    <!-- 对话区 -->
+    <div class="chat-body" id="chatBody">
+        {% if not history %}
+        <div class="welcome-area" id="welcomeArea">
+            <div style="font-size:44px;margin-bottom:10px">🍜</div>
+            <h3>你好！我是京城味蕾管家</h3>
+            <p>精通北京餐饮，点击上方场景卡片设定偏好后发送，<br>或直接输入问题开始聊：</p>
+            <div class="suggestion-grid">
+                {% for s in suggestions %}
+                <div class="suggestion-card" onclick="fillInput('{{ s|escapejs }}')">
+                    <span class="suggestion-card-icon">{% if forloop.counter == 1 %}🔍{% elif forloop.counter == 2 %}💰{% else %}🌙{% endif %}</span>
+                    {{ s }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        <div id="messageList">
+            {% for msg in history %}
+            <div class="message-row {{ msg.role }}">
+                <div class="msg-avatar {% if msg.role == 'assistant' %}ai-av{% else %}user-av{% endif %}">
+                    {% if msg.role == 'assistant' %}🍜{% else %}<i class="fas fa-user"></i>{% endif %}
+                </div>
+                <div>
+                    <div class="bubble {% if msg.role == 'assistant' %}ai{% else %}user{% endif %}"
+                         {% if msg.role == 'assistant' %}data-raw="{{ msg.content|escapejs }}"{% endif %}>
+                        {{ msg.content }}
+                    </div>
+                    <div class="msg-time">{{ msg.created_at|date:"H:i" }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- 输入区 -->
+    <div class="chat-input-area">
+        <div class="input-row">
+            <textarea id="chatInput" class="chat-input" rows="1" maxlength="500"
+                placeholder="点击上方场景卡片设定偏好，或直接问我：「海淀区人均100内有包间的川菜」…"></textarea>
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+        <div class="input-hint">
+            <kbd style="background:#f1f5f9;border:1px solid #e2e8f0;padding:1px 5px;border-radius:3px;font-size:10px">Enter</kbd> 发送 &nbsp;
+            <kbd style="background:#f1f5f9;border:1px solid #e2e8f0;padding:1px 5px;border-radius:3px;font-size:10px">Shift+Enter</kbd> 换行 &nbsp;·&nbsp; 点击场景卡片设置偏好后发送，推荐更精准
+        </div>
+    </div>
+</div>
+
+<!-- ===== 偏好设置侧抽屉 ===== -->
+<div class="pref-drawer-overlay" id="prefOverlay" onclick="closePrefOnOverlay(event)">
+<div class="pref-drawer" id="prefDrawer">
+    <h3 id="prefTitle">🎯 场景偏好设置</h3>
+    <p class="scene-desc" id="prefDesc">根据选中场景，设定你的偏好，AI 会在这次提问中优先考虑。</p>
+
+    <div class="pref-section">
+        <div class="pref-section-label"><i class="fas fa-fire"></i> 口味偏好（多选）</div>
+        <div class="tag-flex" id="flavorTags">
+            <div class="pref-tag"><input type="checkbox" id="f_la" value="辣"><label for="f_la">🌶️ 辣</label></div>
+            <div class="pref-tag"><input type="checkbox" id="f_ml" value="麻辣"><label for="f_ml">🔥 麻辣</label></div>
+            <div class="pref-tag"><input type="checkbox" id="f_sw" value="甜"><label for="f_sw">🍯 甜</label></div>
+            <div class="pref-tag"><input type="checkbox" id="f_sx" value="咸鲜"><label for="f_sx">🧂 咸鲜</label></div>
+            <div class="pref-tag"><input type="checkbox" id="f_qd" value="清淡"><label for="f_qd">🥗 清淡</label></div>
+            <div class="pref-tag"><input type="checkbox" id="f_su" value="酸"><label for="f_su">🍋 酸</label></div>
+            <div class="pref-tag"><input type="checkbox" id="f_zk" value="重口味"><label for="f_zk">💪 重口味</label></div>
+            <div class="pref-tag"><input type="checkbox" id="f_yv" value="原味"><label for="f_yv">🌿 原味</label></div>
+        </div>
+    </div>
+
+    <div class="pref-section">
+        <div class="pref-section-label"><i class="fas fa-ban"></i> 饮食禁忌</div>
+        <input type="text" class="pref-input" id="prefRestrict" placeholder="如：不吃香菜、清真、海鲜过敏…">
+    </div>
+
+    <div class="pref-section">
+        <div class="pref-section-label"><i class="fas fa-wallet"></i> 人均消费区间</div>
+        <select class="pref-select" id="prefBudget">
+            <option value="lt50">50元以内（平价）</option>
+            <option value="50_150" selected>50~150元（日常）</option>
+            <option value="150_500">150~500元（品质）</option>
+            <option value="gt500">500元以上（高端）</option>
+        </select>
+    </div>
+
+    <div class="pref-section">
+        <div class="pref-section-label"><i class="fas fa-map-marker-alt"></i> 偏好区域</div>
+        <input type="text" class="pref-input" id="prefAreas" placeholder="如：海淀、朝阳、西城…">
+    </div>
+
+    <div class="pref-section">
+        <div class="pref-section-label"><i class="fas fa-star"></i> 特殊需求</div>
+        <div class="toggle-row">
+            <label class="toggle-item">
+                <input type="checkbox" id="prefCar"> 🚗 需要停车位
+            </label>
+            <label class="toggle-item">
+                <input type="checkbox" id="prefChild"> 👶 携带儿童
+            </label>
+        </div>
+    </div>
+
+    <div class="drawer-footer">
+        <button class="btn-save-pref" onclick="savePrefAndSend()">
+            <i class="fas fa-paper-plane"></i> 保存偏好并发送
+        </button>
+        <button class="btn-cancel-pref" onclick="closePref()">取消</button>
+    </div>
+</div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const chatBody   = document.getElementById('chatBody');
+const msgList    = document.getElementById('messageList');
+const chatInput  = document.getElementById('chatInput');
+const sendBtn    = document.getElementById('sendBtn');
+const csrfToken  = '{{ csrf_token }}';
+
+// ===== 场景预设配置 =====
+const SCENE_PRESETS = {
+    business:  { budget:'150_500', scene:'env_first',   car:false, child:false, flavor:'咸鲜',   areas:'',    question:'帮我找适合商务宴请的高档餐厅，环境好、有包间，最好在东城或西城' },
+    night:     { budget:'50_150',  scene:'taste_first', car:false, child:false, flavor:'辣,重口味', areas:'',  question:'推荐此时还在营业的深夜宵夜，要评价好的' },
+    family:    { budget:'50_150',  scene:'env_first',   car:true,  child:true,  flavor:'清淡',   areas:'',    question:'带孩子出去吃，需要儿童座椅、停车方便的亲子餐厅' },
+    budget:    { budget:'lt50',    scene:'price_first', car:false, child:false, flavor:'',       areas:'',    question:'帮我找人均50元以内、评分高的午餐，性价比要高' },
+    citywalk:  { budget:'50_150',  scene:'balanced',    car:false, child:false, flavor:'',       areas:'',    question:'规划一条北京CityWalk路线，景点和餐厅结合，有特色' },
+    rainy:     { budget:'50_150',  scene:'env_first',   car:false, child:false, flavor:'辣',     areas:'',    question:'今天下雨，推荐评分高的室内火锅或私房菜，环境舒适' },
+    tradition: { budget:'50_150',  scene:'taste_first', car:false, child:false, flavor:'咸鲜',   areas:'',    question:'推荐老北京传统特色菜，豆汁焦圈炸酱面等地道京味' },
+};
+
+let currentScene    = null;
+let pendingQuestion = '';
+
+function openPref(sceneKey, title, desc) {
+    currentScene = sceneKey;
+    const preset = SCENE_PRESETS[sceneKey] || {};
+
+    // 填充预设
+    document.getElementById('prefTitle').textContent = title;
+    document.getElementById('prefDesc').textContent  = desc;
+    document.getElementById('prefBudget').value = preset.budget || '50_150';
+    document.getElementById('prefAreas').value  = preset.areas  || '';
+    document.getElementById('prefCar').checked  = preset.car    || false;
+    document.getElementById('prefChild').checked= preset.child  || false;
+    document.getElementById('prefRestrict').value = '';
+
+    // 清空口味选择
+    document.querySelectorAll('#flavorTags input').forEach(cb => cb.checked = false);
+    if (preset.flavor) {
+        preset.flavor.split(',').forEach(v => {
+            const cb = document.querySelector(`#flavorTags input[value="${v.trim()}"]`);
+            if (cb) cb.checked = true;
+        });
+    }
+
+    pendingQuestion = preset.question || '';
+    document.getElementById('prefOverlay').classList.add('open');
+}
+
+function closePref() {
+    document.getElementById('prefOverlay').classList.remove('open');
+    currentScene = null;
+}
+
+function closePrefOnOverlay(e) {
+    if (e.target === document.getElementById('prefOverlay')) closePref();
+}
+
+async function savePrefAndSend() {
+    const flavors = [...document.querySelectorAll('#flavorTags input:checked')].map(c=>c.value).join(',');
+    const payload = {
+        flavor_pref:          flavors,
+        dietary_restrictions: document.getElementById('prefRestrict').value.trim(),
+        avg_budget:           document.getElementById('prefBudget').value,
+        frequent_areas:       document.getElementById('prefAreas').value.trim(),
+        scene_weight:         currentScene === 'business' ? 'env_first' :
+                              currentScene === 'budget'   ? 'price_first' :
+                              currentScene === 'tradition'? 'taste_first' : 'balanced',
+        has_car:   document.getElementById('prefCar').checked,
+        has_child: document.getElementById('prefChild').checked,
+    };
+
+    // 保存偏好到后端
+    try {
+        const res = await fetch('/user/ai_save_scene_pref/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!data.success) console.warn('偏好保存失败');
+    } catch(e) { console.warn('偏好保存异常', e); }
+
+    closePref();
+
+    // 填充问题并发送
+    if (pendingQuestion) {
+        chatInput.value = pendingQuestion;
+        autoResize();
+    }
+    await sendMessage();
+}
+
+// ===== Markdown 渲染 =====
+function renderMarkdown(text) {
+    return text
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g,'<em>$1</em>')
+        .replace(/`([^`]+)`/g,'<code>$1</code>')
+        .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+        .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+        .replace(/^# (.+)$/gm,'<h1>$1</h1>')
+        .replace(/^---$/gm,'<hr>')
+        .replace(/^\d+\.\s(.+)$/gm,'<li>$1</li>')
+        .replace(/^[-*]\s(.+)$/gm,'<li>$1</li>')
+        .replace(/(<li>.*<\/li>)/gs,'<ul>$1</ul>')
+        .replace(/\n/g,'<br>');
+}
+
+function now() {
+    const d = new Date();
+    return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+}
+
+function scrollToBottom() { chatBody.scrollTop = chatBody.scrollHeight; }
+
+function fillInput(text) {
+    chatInput.value = text;
+    chatInput.focus();
+    autoResize();
+    const w = document.getElementById('welcomeArea');
+    if (w) w.style.display = 'none';
+}
+
+function autoResize() {
+    chatInput.style.height = 'auto';
+    chatInput.style.height = Math.min(chatInput.scrollHeight, 100) + 'px';
+}
+
+chatInput.addEventListener('input', autoResize);
+chatInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+function appendMessage(role, content, time) {
+    const w = document.getElementById('welcomeArea');
+    if (w) w.style.display = 'none';
+
+    const row = document.createElement('div');
+    row.className = `message-row ${role}`;
+    const isAI = role === 'assistant';
+    const bubbleHtml = isAI
+        ? renderMarkdown(content)
+        : content.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+
+    row.innerHTML = `
+        ${isAI ? `<div class="msg-avatar ai-av">🍜</div>` : `<div class="msg-avatar user-av"><i class="fas fa-user"></i></div>`}
+        <div>
+            <div class="bubble ${isAI ? 'ai' : 'user'}">${bubbleHtml}</div>
+            <div class="msg-time">${time || now()}</div>
+        </div>`;
+    msgList.appendChild(row);
+    scrollToBottom();
+}
+
+function showTyping() {
+    const el = document.createElement('div');
+    el.className = 'typing-indicator'; el.id = 'typingIndicator';
+    el.innerHTML = `<div class="msg-avatar ai-av">🍜</div>
+        <div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+    msgList.appendChild(el); scrollToBottom();
+}
+function hideTyping() { const e = document.getElementById('typingIndicator'); if(e) e.remove(); }
+
+function showError(msg) {
+    const el = document.createElement('div');
+    el.className = 'error-bubble';
+    el.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${msg}`;
+    msgList.appendChild(el); scrollToBottom();
+    setTimeout(() => el.remove(), 6000);
+}
+
+async function sendMessage() {
+    const text = chatInput.value.trim();
+    if (!text || sendBtn.disabled) return;
+
+    chatInput.value = ''; autoResize();
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+    appendMessage('user', text);
+    showTyping();
+
+    try {
+        const res = await fetch('/user/ai_chat/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ message: text })
+        });
+        hideTyping();
+        if (!res.ok) { const e = await res.json(); showError(e.error || `请求失败(${res.status})`); return; }
+        const data = await res.json();
+        if (data.error) showError(data.error);
+        else appendMessage('assistant', data.reply);
+    } catch(e) {
+        hideTyping(); showError('网络异常，请稍后重试');
+    } finally {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+        chatInput.focus();
+    }
+}
+
+async function clearHistory() {
+    if (!confirm('确认清空全部对话记录？')) return;
+    await fetch('/user/ai_clear_history/', { method:'POST', headers:{ 'X-CSRFToken':csrfToken } });
+    msgList.innerHTML = '';
+    const w = document.getElementById('welcomeArea');
+    if (w) w.style.display = 'block'; else location.reload();
+}
+
+// 历史 AI 消息 Markdown 渲染
+document.querySelectorAll('.bubble.ai[data-raw]').forEach(el => {
+    el.innerHTML = renderMarkdown(el.getAttribute('data-raw'));
+});
+scrollToBottom();
+</script>
+{% endblock %}

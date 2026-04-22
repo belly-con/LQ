@@ -1,0 +1,502 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}区域分布分析{% endblock %}
+
+{% block content %}
+<style>
+    /* 保持与 base.html 一致的风格 */
+    .analysis-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    },
+
+    /* 头部样式 - 与base一致 */
+    .page-header {
+        margin-bottom: 30px;
+        border-bottom: 2px solid #1abc9c;
+        padding-bottom: 15px;
+    }
+
+    .page-header h1 {
+        color: #2c3e50;
+        font-size: 24px;
+        margin-bottom: 10px;
+        font-weight: normal;
+    }
+
+    .page-header p {
+        color: #7f8c8d;
+        font-size: 14px;
+    }
+
+    /* 统计卡片 - 简洁风格 */
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 8px;
+        padding: 25px 20px;
+        text-align: center;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        border-left: 4px solid #1abc9c;
+        transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .stat-icon {
+        font-size: 32px;
+        margin-bottom: 15px;
+        display: block;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: bold;
+        color: #2c3e50;
+        margin: 10px 0;
+    }
+
+    .stat-label {
+        color: #7f8c8d;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* 图表区域 */
+    .chart-section {
+        background: white;
+        border-radius: 8px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
+
+    .section-title {
+        color: #2c3e50;
+        font-size: 18px;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #ecf0f1;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .section-title i {
+        color: #1abc9c;
+    }
+
+    #countyChart {
+        width: 100%;
+        height: 400px;
+    }
+
+    /* 地图区域 */
+    .map-section {
+        background: white;
+        border-radius: 8px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
+
+    .map-image-container {
+        text-align: center;
+        margin: 20px 0;
+    }
+
+    .map-image {
+        max-width: 90%;
+        border-radius: 6px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border: 1px solid #ecf0f1;
+        transition: all 0.3s ease;
+    }
+
+    .map-image:hover {
+        transform: scale(1.01);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    .map-caption {
+        text-align: center;
+        color: #7f8c8d;
+        font-size: 14px;
+        margin-top: 10px;
+        font-style: italic;
+    }
+
+    /* 数据表格 */
+    .data-table-container {
+        background: white;
+        border-radius: 8px;
+        padding: 25px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        font-size: 14px;
+    }
+
+    .data-table th {
+        background: #f8f9fa;
+        color: #2c3e50;
+        font-weight: 600;
+        text-align: left;
+        padding: 15px;
+        border-bottom: 2px solid #ecf0f1;
+    }
+
+    .data-table td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #ecf0f1;
+        color: #34495e;
+    }
+
+    .data-table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .county-name {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .shop-count {
+        color: #3498db;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .avg-score {
+        color: #e74c3c;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .avg-price {
+        color: #2ecc71;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    /* 响应式调整 */
+    @media (max-width: 768px) {
+        .stats-container {
+            grid-template-columns: 1fr;
+        }
+
+        .data-table {
+            font-size: 12px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 8px 10px;
+        }
+
+        #countyChart {
+            height: 300px;
+        }
+
+        .map-image {
+            max-width: 100%;
+        }
+    }
+</style>
+
+<div class="analysis-container">
+    <!-- 页面标题 -->
+    <div class="page-header">
+        <h1>📍 区域分布分析</h1>
+        <p>北京市各区域美食店铺分布情况</p>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="stat-icon">🏙️</div>
+            <div class="stat-value" id="countyCount">0</div>
+            <div class="stat-label">分析区域数量</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">🏪</div>
+            <div class="stat-value">{{ total_shops }}</div>
+            <div class="stat-label">总店铺数量</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">⭐</div>
+            <div class="stat-value">{{ avg_score_overall }}</div>
+            <div class="stat-label">平均评分</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-value">¥{{ avg_price_overall }}</div>
+            <div class="stat-label">平均价格</div>
+        </div>
+    </div>
+
+    <!-- 图表区域 -->
+    <div class="chart-section">
+        <div class="section-title">
+            <i>📊</i> 各区域店铺数量分布
+        </div>
+        <div id="countyChart"></div>
+    </div>
+
+    <!-- 地图区域 -->
+    <div class="map-section">
+        <div class="section-title">
+            <i>🗺️</i> 北京市行政区域界线基础地理底图
+        </div>
+        <div class="map-image-container">
+            <img src="{% static 'images/beijing.png' %}"
+                 alt="北京市行政区域界线基础地理底图"
+                 class="map-image">
+            <div class="map-caption">
+                北京市行政区域界线基础地理底图（全市）
+            </div>
+        </div>
+    </div>
+
+    <!-- 数据表格 -->
+    <div class="data-table-container">
+        <div class="section-title">
+            <i>📋</i> 详细数据
+        </div>
+        <div style="overflow-x: auto;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>区域</th>
+                        <th style="text-align: center;">店铺数量</th>
+                        <th style="text-align: center;">平均评分</th>
+                        <th style="text-align: center;">平均价格</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in county_data %}
+                    <tr>
+                        <td class="county-name">{{ item.county }}</td>
+                        <td class="shop-count">{{ item.count }} 家</td>
+                        <td class="avg-score">
+                            {% if item.avg_score %}
+                                {{ item.avg_score|floatformat:2 }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="avg-price">
+                            {% if item.avg_price %}
+                                ¥{{ item.avg_price|floatformat:0 }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 30px; color: #95a5a6;">
+                            暂无数据
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 初始化图表
+    function initChart() {
+        const chartDom = document.getElementById('countyChart');
+        if (!chartDom) return;
+
+        const chart = echarts.init(chartDom);
+
+        const option = {
+            title: {
+                text: '各区域店铺数量对比',
+                left: 'center',
+                textStyle: {
+                    fontSize: 16,
+                    fontWeight: 'normal',
+                    color: '#2c3e50'
+                }
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow'
+                },
+                formatter: function(params) {
+                    const item = params[0];
+                    return `
+                        <div style="font-weight: bold; margin-bottom: 5px;">${item.name}</div>
+                        <div>店铺数量：<span style="color:#3498db;font-weight:bold">${item.value} 家</span></div>
+                    `;
+                }
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '10%',
+                top: '15%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                data: {{ county_names|safe }},
+                axisLabel: {
+                    rotate: 45,
+                    interval: 0,
+                    fontSize: 12,
+                    color: '#7f8c8d'
+                },
+                axisLine: {
+                    lineStyle: {
+                        color: '#ecf0f1'
+                    }
+                }
+            },
+            yAxis: {
+                type: 'value',
+                name: '店铺数量',
+                nameTextStyle: {
+                    color: '#7f8c8d',
+                    fontSize: 12
+                },
+                axisLine: {
+                    show: true,
+                    lineStyle: {
+                        color: '#ecf0f1'
+                    }
+                },
+                splitLine: {
+                    lineStyle: {
+                        color: '#f8f9fa'
+                    }
+                }
+            },
+            series: [{
+                name: '店铺数量',
+                type: 'bar',
+                data: {{ county_counts|safe }},
+                barWidth: '60%',
+                itemStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: '#1abc9c' },
+                        { offset: 1, color: '#16a085' }
+                    ]),
+                    borderRadius: [4, 4, 0, 0]
+                },
+                label: {
+                    show: true,
+                    position: 'top',
+                    formatter: '{c}家',
+                    fontSize: 11,
+                    fontWeight: 'bold',
+                    color: '#2c3e50'
+                },
+                emphasis: {
+                    itemStyle: {
+                        shadowColor: 'rgba(26, 188, 156, 0.5)',
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowOffsetY: 0
+                    }
+                }
+            }]
+        };
+
+        chart.setOption(option);
+
+        // 响应式调整
+        window.addEventListener('resize', function() {
+            chart.resize();
+        });
+    }
+
+    // 数字动画效果
+    function animateValue(element, start, end, duration) {
+        const startTime = performance.now();
+        const step = (currentTime) => {
+            const elapsedTime = currentTime - startTime;
+            const progress = Math.min(elapsedTime / duration, 1);
+            const value = Math.floor(progress * (end - start) + start);
+            element.textContent = value;
+
+            if (progress < 1) {
+                requestAnimationFrame(step);
+            }
+        };
+        requestAnimationFrame(step);
+    }
+
+    // 页面加载完成后执行
+    document.addEventListener('DOMContentLoaded', function() {
+        // 初始化图表
+        if (typeof echarts !== 'undefined') {
+            initChart();
+        } else {
+            console.error('ECharts未加载');
+            // 如果ECharts未加载，可以尝试动态加载
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js';
+            script.onload = initChart;
+            document.head.appendChild(script);
+        }
+
+        // 统计卡片数字动画
+        const countyCountElement = document.getElementById('countyCount');
+        if (countyCountElement) {
+            const targetValue = parseInt('{{ county_count }}') || 0;
+            animateValue(countyCountElement, 0, targetValue, 800);
+        }
+
+        const tableRows = document.querySelectorAll('.data-table tbody tr');
+        tableRows.forEach(row => {
+            row.addEventListener('mouseenter', function() { this.style.backgroundColor = '#f8f9fa'; });
+            row.addEventListener('mouseleave', function() { this.style.backgroundColor = ''; });
+        });
+    });
+</script>
+
+{% if suggestions_county %}
+<div style="background:linear-gradient(135deg,#eff6ff,#f5f3ff);border-radius:14px;padding:20px 24px;margin:24px 0;border-left:4px solid #456bc4">
+    <div style="font-size:15px;font-weight:800;color:#1d4ed8;margin-bottom:14px;display:flex;align-items:center;gap:8px">
+        <i class="fas fa-lightbulb"></i> 区域分布数据解读与出行建议
+    </div>
+    {% for tip in suggestions_county %}
+    <div style="background:white;border-radius:10px;padding:12px 16px;margin-bottom:10px;font-size:14px;color:#374151;line-height:1.6;box-shadow:0 1px 4px rgba(0,0,0,.06)">{{ tip }}</div>
+    {% endfor %}
+    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+        <a href="/user/shop_map/" style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:#456bc4;color:white;border-radius:18px;font-size:13px;font-weight:700;text-decoration:none">
+            <i class="fas fa-map"></i> 查看店铺地图
+        </a>
+        <a href="/user/top10_popular/" style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:white;color:#456bc4;border:1.5px solid #456bc4;border-radius:18px;font-size:13px;font-weight:700;text-decoration:none">
+            <i class="fas fa-trophy"></i> 查看热门排行
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

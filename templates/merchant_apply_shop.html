@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}提交店铺申请{% endblock %}
+{% block content %}
+<style>
+.apply-card{background:white;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);overflow:hidden;max-width:800px;margin:0 auto}
+.apply-header{background:linear-gradient(135deg,#456bc4,#8e5de0);padding:28px 32px;color:white}
+.apply-header h2{font-size:20px;font-weight:800;margin:0 0 6px}
+.apply-header p{font-size:14px;opacity:.85;margin:0}
+.apply-body{padding:32px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.form-group{margin-bottom:0}
+.form-group.full{grid-column:1/-1}
+.form-label{display:block;font-size:13px;font-weight:700;color:#374151;margin-bottom:8px}
+.form-label span{color:#ef4444}
+.form-control{width:100%;padding:11px 15px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:inherit;outline:none;transition:all .2s;box-sizing:border-box;background:#f9fafb}
+.form-control:focus{border-color:#456bc4;background:white;box-shadow:0 0 0 3px rgba(69,107,196,.1)}
+.form-hint{font-size:12px;color:#9ca3af;margin-top:5px}
+.btn-submit{padding:13px 40px;background:linear-gradient(135deg,#456bc4,#8e5de0);color:white;border:none;border-radius:24px;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-submit:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(69,107,196,.35)}
+.alert-msg{padding:12px 16px;border-radius:10px;margin-bottom:20px;font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px}
+.alert-msg.error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+.alert-msg.success{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+.section-divider{font-size:13px;font-weight:700;color:#456bc4;margin:24px 0 16px;padding-bottom:8px;border-bottom:2px solid #eff6ff;grid-column:1/-1;display:flex;align-items:center;gap:8px}
+</style>
+
+<div class="page-header">
+    <div class="page-title"><i class="fas fa-file-alt"></i> 提交店铺申请</div>
+    <p class="page-subtitle">请如实填写店铺信息，管理员将在 1-3 个工作日内完成审核。</p>
+</div>
+
+<div class="apply-card">
+    <div class="apply-header">
+        <h2>🍽️ 填写店铺信息</h2>
+        <p>信息越完整，审核通过率越高；审核通过后将自动录入系统展示给所有用户</p>
+    </div>
+    <div class="apply-body">
+        {% if msg %}
+        <div class="alert-msg {{ msg_type }}">
+            <i class="fas {% if msg_type == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %}"></i>
+            {{ msg }}
+            {% if msg_type == 'success' %}
+            <a href="/user/merchant_dashboard/" style="color:#065f46;margin-left:12px;font-weight:700">查看申请进度 →</a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <form method="post" id="applyForm">
+            {% csrf_token %}
+            <div class="form-grid">
+                <div class="section-divider"><i class="fas fa-store"></i> 基本信息</div>
+
+                <div class="form-group full">
+                    <label class="form-label">店铺名称 <span>*</span></label>
+                    <input type="text" name="shop_name" class="form-control" placeholder="如：四季民福烤鸭店（王府井店）" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">菜系类型 <span>*</span></label>
+                    <select name="food_type" class="form-control" required>
+                        <option value="">请选择菜系</option>
+                        {% for ft in food_types %}<option value="{{ ft }}">{{ ft }}</option>{% endfor %}
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">人均消费（元）<span>*</span></label>
+                    <input type="number" name="avg_price" class="form-control" placeholder="如：128" min="0" step="1">
+                </div>
+
+                <div class="section-divider"><i class="fas fa-map-marker-alt"></i> 位置信息</div>
+
+                <div class="form-group">
+                    <label class="form-label">所在区县 <span>*</span></label>
+                    <select name="county" class="form-control" required>
+                        <option value="">请选择区县</option>
+                        {% for c in counties %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">商圈</label>
+                    <input type="text" name="business_circle" class="form-control" placeholder="如：王府井、三里屯">
+                </div>
+                <div class="form-group full">
+                    <label class="form-label">详细地址 <span>*</span></label>
+                    <input type="text" name="location" class="form-control" placeholder="如：北京市东城区王府井大街138号" required>
+                </div>
+
+                <div class="section-divider"><i class="fas fa-phone"></i> 联系与营业</div>
+
+                <div class="form-group">
+                    <label class="form-label">店铺电话</label>
+                    <input type="text" name="phone" class="form-control" placeholder="如：010-12345678">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">营业时间</label>
+                    <input type="text" name="business_hours" class="form-control" placeholder="如：10:00-22:00">
+                </div>
+                <div class="form-group full">
+                    <label class="form-label">店铺简介</label>
+                    <textarea name="description" class="form-control" rows="4" placeholder="介绍你店铺的特色、招牌菜品、环境氛围等，有助于加快审核通过..."></textarea>
+                    <div class="form-hint">建议100字以上，重点描述菜品特色和用餐体验</div>
+                </div>
+            </div>
+
+            <div style="margin-top:28px;display:flex;gap:16px;align-items:center">
+                <button type="submit" class="btn-submit"><i class="fas fa-paper-plane"></i> 提交申请</button>
+                <a href="/user/merchant_dashboard/" style="font-size:14px;color:#6b7280">← 返回控制台</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

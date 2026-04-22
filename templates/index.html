@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}用户首页{% endblock %}
+{% block content %}
+    <h2>欢迎进入系统用户中心</h2>
+    <div style="font-size:16px;line-height:2.8;color:#333;padding:25px;background:#f9f9f9;border-radius:8px;margin-top:10px;">
+        <p>✅ 当前登录账号：<b style="color:#2980b9;">{{ user.username }}</b></p>
+        <p>✅ 账号权限类型：{% if user.is_superuser %}<span style="color:red;">超级管理员【可访问后台管理所有用户】</span>{% else %}普通用户{% endif %}</p>
+        <p>✅ 账号注册时间：{{ user.date_joined|date:"Y-m-d H:i:s" }}</p>
+        <p>✅ 最后登录时间：{{ user.last_login|date:"Y-m-d H:i:s" }}</p>
+        <hr style="margin:20px 0;">
+        <p style="color:#666;">💡 操作提示：您可以通过左侧的功能菜单，查看个人信息、修改账号密码；管理员用户可点击【管理员后台】进入系统管理页面，对所有用户进行管理。</p>
+    </div>
+{% endblock %}

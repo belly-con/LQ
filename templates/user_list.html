@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>所有用户列表</title>
+    <style>
+        body{width: 1000px;margin: 50px auto;}
+        table{width: 100%;border-collapse: collapse;text-align: center;}
+        th,td{border:1px solid #ccc;padding:8px;}
+        th{background-color: #f5f5f5;}
+    </style>
+</head>
+<body>
+    <h2>【管理员专属】系统所有注册用户信息列表</h2>
+    <table>
+        <tr>
+            <th>序号</th>
+            <th>用户名</th>
+            <th>手机号</th>
+            <th>账号类型</th>
+            <th>注册时间</th>
+        </tr>
+        {% for user in user_list %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ user.phone|default:"未填写" }}</td>
+            <td>{% if user.user_type == 1 %}管理员账号{% else %}普通用户账号{% endif %}</td>
+            <td>{{ user.create_time }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">暂无用户注册数据</td></tr>
+        {% endfor %}
+    </table>
+    <br>
+    <a href="/user/admin_index/">返回管理员首页</a>
+</body>
+</html>
