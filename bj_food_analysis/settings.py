@@ -135,6 +135,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # 百度地图API配置
 # 请访问 https://lbsyun.baidu.com/ 申请API Key
 # 将申请的AK替换下面的YOUR_BAIDU_MAP_AK
+BAIDU_MAP_AK = os.environ.get('BAIDU_MAP_AK', '')
 
 
 # ========== DeepSeek AI 配置 ==========
